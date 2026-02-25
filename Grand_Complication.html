@@ -1,0 +1,3166 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grand Complication — Astronomical & Temporal Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=JetBrains+Mono:wght@300;400;500&family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+/* ==========================================
+   THEME SYSTEM - CSS Custom Properties
+   ========================================== */
+
+:root {
+  /* Shared values */
+  --font-display:'Cormorant Garamond',Georgia,serif;
+  --font-body:'Outfit',system-ui,sans-serif;
+  --font-mono:'JetBrains Mono','Courier New',monospace;
+  --transition-theme: background-color 0.4s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* ---- ORIGINAL DARK THEME (Default) ---- */
+[data-theme="dark"] {
+  --bg-deep:#06080d;
+  --bg-card:#0c1018;
+  --bg-card-hover:#101522;
+  --bg-surface:#141a28;
+  --border:#1a2235;
+  --border-light:#243050;
+  --text-primary:#d4dae8;
+  --text-secondary:#7a8ba8;
+  --text-dim:#4a5a75;
+  --gold:#c8a84e;
+  --gold-dim:#8a7235;
+  --amber:#d4924e;
+  --blue-accent:#4a7cc8;
+  --cyan:#5ab8c8;
+  --red-soft:#c85a5a;
+  --green-soft:#5ac87a;
+  --modal-bg:rgba(4,6,10,0.95);
+  --topbar-bg:rgba(6,8,13,0.85);
+  --nav-bg:rgba(6,8,13,0.9);
+  --shadow-glow:rgba(200,168,78,0.1);
+  --chart-grid:#1a2235;
+  --chart-grid-subtle:#0f1520;
+}
+
+/* ---- SOLARIZED DARK THEME ---- */
+[data-theme="solarized-dark"] {
+  --bg-deep:#002b36;
+  --bg-card:#073642;
+  --bg-card-hover:#094555;
+  --bg-surface:#0a4f5c;
+  --border:#094555;
+  --border-light:#2aa198;
+  --text-primary:#eee8d5;
+  --text-secondary:#93a1a1;
+  --text-dim:#657b83;
+  --gold:#b58900;
+  --gold-dim:#7d5f00;
+  --amber:#cb4b16;
+  --blue-accent:#268bd2;
+  --cyan:#2aa198;
+  --red-soft:#dc322f;
+  --green-soft:#859900;
+  --modal-bg:rgba(0,43,54,0.95);
+  --topbar-bg:rgba(0,43,54,0.9);
+  --nav-bg:rgba(0,43,54,0.92);
+  --shadow-glow:rgba(181,137,0,0.15);
+  --chart-grid:#094555;
+  --chart-grid-subtle:#073642;
+}
+
+/* ---- LIGHT THEME ---- */
+[data-theme="light"] {
+  --bg-deep:#f8f5f0;
+  --bg-card:#ffffff;
+  --bg-card-hover:#faf8f5;
+  --bg-surface:#f0ebe3;
+  --border:#e0d8cc;
+  --border-light:#c8bfb0;
+  --text-primary:#2c3e50;
+  --text-secondary:#5a6c7d;
+  --text-dim:#8a9aab;
+  --gold:#b8860b;
+  --gold-dim:#d4a843;
+  --amber:#d2691e;
+  --blue-accent:#2874a6;
+  --cyan:#17a2b8;
+  --red-soft:#c0392b;
+  --green-soft:#27ae60;
+  --modal-bg:rgba(248,245,240,0.98);
+  --topbar-bg:rgba(255,255,255,0.92);
+  --nav-bg:rgba(255,255,255,0.95);
+  --shadow-glow:rgba(184,134,11,0.1);
+  --chart-grid:#e0d8cc;
+  --chart-grid-subtle:#f0ebe3;
+}
+
+/* ---- SOLARIZED LIGHT THEME ---- */
+[data-theme="solarized-light"] {
+  --bg-deep:#fdf6e3;
+  --bg-card:#eee8d5;
+  --bg-card-hover:#f5f0e0;
+  --bg-surface:#fdf6e3;
+  --border:#d3cbb8;
+  --border-light:#93a1a1;
+  --text-primary:#073642;
+  --text-secondary:#586e75;
+  --text-dim:#93a1a1;
+  --gold:#b58900;
+  --gold-dim:#d4a843;
+  --amber:#cb4b16;
+  --blue-accent:#268bd2;
+  --cyan:#2aa198;
+  --red-soft:#dc322f;
+  --green-soft:#859900;
+  --modal-bg:rgba(253,246,227,0.98);
+  --topbar-bg:rgba(238,232,213,0.95);
+  --nav-bg:rgba(238,232,213,0.95);
+  --shadow-glow:rgba(181,137,0,0.15);
+  --chart-grid:#d3cbb8;
+  --chart-grid-subtle:#eee8d5;
+}
+
+/* ==========================================
+   BASE STYLES
+   ========================================== */
+
+html{font-size:14px;scroll-behavior:smooth}
+body{
+  background:var(--bg-deep);
+  color:var(--text-primary);
+  font-family:var(--font-body);
+  min-height:100vh;
+  overflow-x:hidden;
+  line-height:1.5;
+  transition: var(--transition-theme);
+}
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg-deep)}
+::-webkit-scrollbar-thumb{background:var(--border-light);border-radius:3px}
+::selection{background:var(--gold-dim);color:var(--text-primary)}
+
+/* ---- Location Modal ---- */
+#location-modal{position:fixed;top:0;right:0;bottom:0;left:0;z-index:1000;background:var(--modal-bg);
+display:flex;align-items:center;justify-content:center;backdrop-filter:blur(20px)}
+#location-modal.hidden{display:none}
+.modal-content{background:var(--bg-card);border:1px solid var(--border-light);
+border-radius:12px;padding:3rem;max-width:480px;width:90%;text-align:center;
+box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);transition:var(--transition-theme)}
+.modal-content h2{font-family:var(--font-display);font-weight:300;font-size:2rem;
+color:var(--gold);margin-bottom:.5rem;letter-spacing:.05em}
+.modal-content p{color:var(--text-secondary);margin-bottom:2rem;font-weight:300}
+.modal-btn{display:block;width:100%;padding:1rem;margin:.6rem 0;
+background:var(--bg-surface);border:1px solid var(--border-light);color:var(--text-primary);
+border-radius:8px;cursor:pointer;font-family:var(--font-body);font-size:.95rem;
+transition:all .3s}
+.modal-btn:hover{background:var(--bg-card-hover);border-color:var(--gold-dim)}
+.modal-btn.primary{border-color:var(--gold-dim);color:var(--gold)}
+.modal-input{width:100%;padding:.8rem 1rem;background:var(--bg-deep);
+border:1px solid var(--border);color:var(--text-primary);border-radius:6px;
+font-family:var(--font-body);font-size:.95rem;margin:.4rem 0;outline:none;transition:var(--transition-theme)}
+.modal-input:focus{border-color:var(--gold-dim)}
+.modal-input::placeholder{color:var(--text-dim)}
+#manual-entry{display:none;margin-top:1.5rem;text-align:left}
+#manual-entry label{color:var(--text-secondary);font-size:.8rem;display:block;margin-top:.8rem}
+.modal-row{display:flex;gap:.6rem}
+.modal-row .modal-input{flex:1}
+
+/* ---- Location Manager Panel ---- */
+#loc-panel{position:fixed;top:0;right:-380px;width:360px;height:100vh;z-index:900;
+background:var(--bg-card);border-left:1px solid var(--border);padding:2rem;
+overflow-y:auto;transition:right .4s cubic-bezier(.22,1,.36,1), background-color 0.4s ease}
+#loc-panel.open{right:0}
+#loc-panel h3{font-family:var(--font-display);font-weight:300;font-size:1.4rem;color:var(--gold);margin-bottom:1.5rem}
+.loc-item{background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;
+padding:1rem;margin-bottom:.6rem;cursor:pointer;transition:all .3s}
+.loc-item:hover{border-color:var(--gold-dim)}
+.loc-item.active{border-color:var(--gold);box-shadow:0 0 20px var(--shadow-glow)}
+.loc-item .loc-label{color:var(--text-primary);font-weight:400}
+.loc-item .loc-coords{color:var(--text-dim);font-family:var(--font-mono);font-size:.75rem;margin-top:.2rem}
+.loc-actions{display:flex;gap:.4rem;margin-top:.5rem}
+.loc-actions button{background:none;border:none;color:var(--text-dim);cursor:pointer;
+font-size:.75rem;padding:.2rem .5rem;border-radius:4px;font-family:var(--font-body)}
+.loc-actions button:hover{color:var(--text-primary);background:var(--bg-deep)}
+#add-loc-btn{width:100%;padding:.8rem;margin-top:1rem;background:var(--bg-deep);
+border:1px dashed var(--border-light);color:var(--text-secondary);border-radius:8px;
+cursor:pointer;font-family:var(--font-body)}
+#add-loc-btn:hover{border-color:var(--gold-dim);color:var(--gold)}
+
+/* ---- Top Bar ---- */
+#topbar{position:fixed;top:0;left:0;right:0;height:48px;z-index:800;
+background:var(--topbar-bg);backdrop-filter:blur(12px);
+border-bottom:1px solid var(--border);display:flex;align-items:center;
+padding:0 1.5rem;justify-content:space-between;transition:var(--transition-theme)}
+#topbar .brand{font-family:var(--font-display);font-weight:300;font-size:1.1rem;
+color:var(--gold);letter-spacing:.12em;text-transform:uppercase}
+#topbar .active-loc{color:var(--text-dim);font-family:var(--font-mono);font-size:.7rem;
+cursor:pointer;padding:.3rem .7rem;border-radius:4px;border:1px solid transparent;transition:all .3s}
+#topbar .active-loc:hover{border-color:var(--border-light);color:var(--text-secondary)}
+#topbar .controls{display:flex;gap:.6rem;align-items:center}
+#topbar .controls button{background:none;border:1px solid var(--border);color:var(--text-secondary);
+padding:.3rem .7rem;border-radius:4px;cursor:pointer;font-family:var(--font-body);
+font-size:.75rem;transition:all .3s}
+#topbar .controls button:hover{border-color:var(--gold-dim);color:var(--gold)}
+#topbar .controls button.active{border-color:var(--gold);color:var(--gold);background:var(--bg-surface)}
+
+/* Theme switcher dropdown */
+.theme-dropdown{position:relative}
+.theme-dropdown-content{position:absolute;top:100%;right:0;margin-top:4px;
+background:var(--bg-card);border:1px solid var(--border-light);border-radius:8px;
+min-width:160px;box-shadow:0 10px 40px rgba(0,0,0,0.2);opacity:0;visibility:hidden;
+transform:translateY(-8px);transition:all .2s ease;z-index:1000}
+.theme-dropdown:hover .theme-dropdown-content,
+.theme-dropdown:focus-within .theme-dropdown-content,
+.theme-dropdown-content:hover{opacity:1;visibility:visible;transform:translateY(0)}
+.theme-option{display:block;padding:.6rem 1rem;color:var(--text-secondary);font-size:.8rem;
+cursor:pointer;transition:all .15s;border:none;background:none;width:100%;text-align:left;font-family:var(--font-body)}
+.theme-option:hover,.theme-option:focus{background:var(--bg-surface);color:var(--gold);outline:none}
+.theme-option.active{color:var(--gold);font-weight:500}
+.theme-option:first-child{border-radius:7px 7px 0 0}
+.theme-option:last-child{border-radius:0 0 7px 7px}
+
+/* Accessibility - Focus indicators */
+button:focus-visible,.modal-btn:focus-visible,.nav-link:focus-visible{
+outline:2px solid var(--gold);outline-offset:2px}
+.loc-item:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+#bortle-select:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* ---- Section Navigation ---- */
+#section-nav{position:fixed;top:48px;left:0;right:0;z-index:700;height:36px;
+background:var(--nav-bg);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);
+display:flex;align-items:center;gap:0;overflow-x:auto;padding:0 1rem;transition:var(--transition-theme)}
+#section-nav::-webkit-scrollbar{height:0}
+.nav-link{color:var(--text-dim);font-size:.72rem;font-weight:400;letter-spacing:.08em;
+text-transform:uppercase;padding:.5rem 1rem;cursor:pointer;white-space:nowrap;
+transition:color .3s;border-bottom:2px solid transparent;text-decoration:none}
+.nav-link:hover,.nav-link.active{color:var(--gold);border-bottom-color:var(--gold-dim)}
+
+/* ---- Main Content ---- */
+#main{padding-top:96px;max-width:1600px;margin:0 auto;padding-left:1.5rem;padding-right:1.5rem;padding-bottom:4rem}
+.section{margin-bottom:3rem}
+.section-title{font-family:var(--font-display);font-weight:300;font-size:1.6rem;
+color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1.5rem;
+padding-bottom:.5rem;border-bottom:1px solid var(--border)}
+.grid{display:grid;gap:1rem}
+.grid-2{grid-template-columns:repeat(2,1fr)}
+.grid-3{grid-template-columns:repeat(3,1fr)}
+.grid-4{grid-template-columns:repeat(4,1fr)}
+@media(max-width:1200px){.grid-4{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.grid-3,.grid-2{grid-template-columns:1fr}.grid-4{grid-template-columns:1fr}}
+
+/* ---- Card ---- */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;
+padding:1.2rem;position:relative;overflow:hidden;transition:border-color .4s, background-color 0.4s ease}
+.card:hover{border-color:var(--border-light)}
+.card-label{font-size:.65rem;text-transform:uppercase;letter-spacing:.12em;
+color:var(--text-dim);margin-bottom:.6rem;font-weight:500}
+.card-value{font-family:var(--font-mono);font-size:1.5rem;font-weight:300;color:var(--text-primary)}
+.card-value.large{font-size:2.2rem}
+.card-sub{font-size:.75rem;color:var(--text-secondary);margin-top:.3rem}
+.card-detail{font-family:var(--font-mono);font-size:.8rem;color:var(--text-secondary);line-height:1.8}
+.card-hero{min-height:280px;display:flex;align-items:center;justify-content:center}
+.card canvas{border-radius:6px}
+.positive{color:var(--green-soft)}.negative{color:var(--red-soft)}
+.gold{color:var(--gold)}.cyan{color:var(--cyan)}.amber{color:var(--amber)}
+
+/* ---- Specific Display Styles ---- */
+.twilight-bar{height:24px;border-radius:4px;overflow:hidden;display:flex;margin:.3rem 0}
+.twilight-bar div{height:100%}
+.timeline-row{display:flex;align-items:center;gap:.8rem;padding:.4rem 0;
+border-bottom:1px solid var(--border);font-size:.8rem}
+.timeline-row:last-child{border-bottom:none}
+.timeline-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.timeline-label{flex:1;color:var(--text-secondary)}
+.timeline-value{font-family:var(--font-mono);color:var(--text-primary);font-size:.8rem}
+.mini-chart{width:100%;height:80px}
+.year-curve{width:100%;height:120px}
+
+/* Calendar */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:.5rem}
+.cal-header{text-align:center;font-size:.6rem;color:var(--text-dim);padding:.3rem;text-transform:uppercase;letter-spacing:.05em}
+.cal-day{text-align:center;font-family:var(--font-mono);font-size:.75rem;padding:.35rem;
+border-radius:4px;color:var(--text-secondary)}
+.cal-day.today{background:var(--gold-dim);color:var(--bg-deep);font-weight:500}
+.cal-day.empty{opacity:0}
+
+/* World Clock */
+.clock-ring{position:relative;width:100%;aspect-ratio:1;max-width:300px;margin:0 auto}
+
+/* Retrograde Timeline */
+.retro-bar{height:12px;border-radius:3px;background:var(--bg-deep);margin:.3rem 0;position:relative;overflow:hidden}
+.retro-fill{position:absolute;height:100%;border-radius:3px}
+
+/* Star Chart */
+#star-chart-canvas{width:100%;height:100%;min-height:300px}
+
+/* Light Spheres */
+#light-display{min-height:320px}
+
+/* Fullscreen */
+.fullscreen #topbar,.fullscreen #section-nav{opacity:0;pointer-events:none;transition:opacity .3s}
+.fullscreen:hover #topbar,.fullscreen:hover #section-nav{opacity:1;pointer-events:auto}
+.fullscreen #main{padding-top:20px}
+
+/* Animations */
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card{animation:fadeIn .6s ease both}
+.section:nth-child(2) .card{animation-delay:.05s}
+.section:nth-child(3) .card{animation-delay:.1s}
+
+/* Screen reader only class for accessibility */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+
+/* Scrollbar for loc panel */
+#loc-panel::-webkit-scrollbar{width:4px}
+#loc-panel::-webkit-scrollbar-thumb{background:var(--border)}
+
+/* Tooltip */
+.tooltip{position:absolute;background:var(--bg-surface);border:1px solid var(--border-light);
+border-radius:6px;padding:.5rem .8rem;font-size:.75rem;color:var(--text-secondary);
+pointer-events:none;z-index:100;white-space:nowrap}
+
+/* Theme indicator glow effects */
+[data-theme="solarized-dark"] .card:hover {
+  box-shadow: 0 0 30px rgba(42,161,152,0.1);
+}
+[data-theme="light"] .card {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+[data-theme="light"] .card:hover {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+[data-theme="solarized-light"] .card {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+[data-theme="solarized-light"] .card:hover {
+  box-shadow: 0 4px 20px rgba(181,137,0,0.1);
+}
+</style>
+</head>
+<body>
+
+<!-- Location Setup Modal -->
+<div id="location-modal">
+<div class="modal-content">
+<h2>Grand Complication</h2>
+<p>Your location is needed for astronomical calculations.<br>Where would you like to observe from?</p>
+<button class="modal-btn primary" onclick="useGeolocation()">⊕ Use My Current Location</button>
+<button class="modal-btn" onclick="showManualEntry()">Enter Coordinates Manually</button>
+<div id="manual-entry">
+<label>Label (e.g., "Home")</label>
+<input class="modal-input" id="loc-label-input" placeholder="Home" value="Home">
+<label>Latitude & Longitude</label>
+<div class="modal-row">
+<input class="modal-input" id="loc-lat-input" placeholder="40.7128" type="number" step="any">
+<input class="modal-input" id="loc-lng-input" placeholder="-74.0060" type="number" step="any">
+</div>
+<button class="modal-btn primary" onclick="saveManualLocation()" style="margin-top:1rem">Save Location</button>
+</div>
+<div id="modal-status" style="color:var(--amber);margin-top:1rem;font-size:.85rem"></div>
+</div>
+</div>
+
+<!-- Top Bar -->
+<div id="topbar" role="banner">
+<div class="brand">Grand Complication</div>
+<button class="active-loc" onclick="toggleLocPanel()" id="active-loc-display" aria-label="Current location, click to manage locations">—</button>
+<div class="controls">
+<button onclick="toggleTimeFormat()" id="time-fmt-btn" aria-label="Toggle 12/24 hour time format">12h</button>
+<div class="theme-dropdown" role="menu" aria-label="Theme selection">
+<button id="theme-btn" aria-haspopup="true" aria-expanded="false">🎨 Theme</button>
+<div class="theme-dropdown-content" role="menu">
+<button class="theme-option" data-theme="dark" role="menuitem">◐ Original Dark</button>
+<button class="theme-option" data-theme="solarized-dark" role="menuitem">◑ Solarized Dark</button>
+<button class="theme-option" data-theme="light" role="menuitem">☀ Light</button>
+<button class="theme-option" data-theme="solarized-light" role="menuitem">◔ Solarized Light</button>
+</div>
+</div>
+<button onclick="toggleLocPanel()" aria-label="Open location manager">☰ Locations</button>
+<button onclick="toggleFullscreen()" aria-label="Toggle fullscreen mode">⛶ Fullscreen</button>
+</div>
+</div>
+
+<!-- Section Navigation -->
+<nav id="section-nav" role="navigation" aria-label="Page sections">
+<a class="nav-link" href="#sec-moon">Moon</a>
+<a class="nav-link" href="#sec-sun">Sun</a>
+<a class="nav-link" href="#sec-events">Events</a>
+<a class="nav-link" href="#sec-sky">Sky</a>
+<a class="nav-link" href="#sec-earth">Earth</a>
+<a class="nav-link" href="#sec-deep">Deep Space</a>
+<a class="nav-link" href="#sec-geo">Geophysical</a>
+<a class="nav-link" href="#sec-time">Calendars & Time</a>
+</nav>
+
+<!-- Location Panel -->
+<div id="loc-panel">
+<h3>Saved Locations</h3>
+<div id="loc-list"></div>
+<button id="add-loc-btn" onclick="showAddLocation()">+ Add Location</button>
+<div id="add-loc-form" style="display:none;margin-top:1rem">
+<input class="modal-input" id="new-loc-label" placeholder="Label">
+<div class="modal-row">
+<input class="modal-input" id="new-loc-lat" placeholder="Latitude" type="number" step="any">
+<input class="modal-input" id="new-loc-lng" placeholder="Longitude" type="number" step="any">
+</div>
+<button class="modal-btn primary" onclick="addNewLocation()" style="margin-top:.5rem">Save</button>
+</div>
+</div>
+
+<!-- Main Content -->
+<div id="main">
+
+<!-- MOON SECTION -->
+<div class="section" id="sec-moon">
+<div class="section-title">Moon</div>
+<div class="grid grid-2">
+<div class="card card-hero" id="moon-phase-card" style="flex-direction:column">
+<div class="card-label">Current Moon Phase</div>
+<div id="moon-3d" style="width:100%;height:320px" role="img" aria-label="Interactive 3D moon visualization showing current phase"></div>
+<div id="moon-phase-text" class="card-sub" style="text-align:center;margin-top:.5rem;font-size:.9rem"></div>
+</div>
+<div class="card">
+<div class="card-label">Moonrise & Moonset</div>
+<div id="moon-times" class="card-detail" style="margin-top:1rem"></div>
+<div id="moon-info" class="card-detail" style="margin-top:1rem"></div>
+</div>
+</div>
+</div>
+
+<!-- SUN SECTION -->
+<div class="section" id="sec-sun">
+<div class="section-title">Sun</div>
+<div class="grid grid-3">
+<div class="card">
+<div class="card-label">Sun Position</div>
+<div id="sun-position" class="card-detail"></div>
+<canvas id="sun-pos-canvas" width="200" height="200" style="margin-top:.5rem" role="img" aria-label="Sun compass showing current sun position in the sky"></canvas>
+</div>
+<div class="card">
+<div class="card-label">Sunrise & Sunset</div>
+<div id="sun-times" class="card-detail" style="margin-top:.5rem"></div>
+</div>
+<div class="card">
+<div class="card-label">Golden & Blue Hours</div>
+<div id="golden-blue" class="card-detail" style="margin-top:.5rem"></div>
+</div>
+<div class="card" style="grid-column:span 2">
+<div class="card-label">Twilight Transitions</div>
+<div id="twilight-display"></div>
+</div>
+<div class="card">
+<div class="card-label">Equation of Time</div>
+<div id="eot-value" class="card-value"></div>
+<div id="eot-sub" class="card-sub"></div>
+<canvas id="eot-canvas" width="300" height="100" style="margin-top:.5rem;width:100%"></canvas>
+</div>
+<div class="card">
+<div class="card-label">Day Length</div>
+<div id="day-length" class="card-value"></div>
+<div id="day-delta" class="card-sub"></div>
+</div>
+<div class="card">
+<div class="card-label">Analemma Position</div>
+<canvas id="analemma-canvas" width="200" height="280" style="width:100%;max-width:200px;margin:0 auto;display:block"></canvas>
+</div>
+<div class="card">
+<div class="card-label">Solar Cycle 25</div>
+<div id="solar-cycle-info" class="card-sub"></div>
+<canvas id="solar-cycle-canvas" width="300" height="100" style="margin-top:.5rem;width:100%"></canvas>
+</div>
+</div>
+</div>
+
+<!-- CELESTIAL EVENTS SECTION -->
+<div class="section" id="sec-events">
+<div class="section-title">Celestial Events</div>
+<div class="grid grid-3">
+<div class="card">
+<div class="card-label">Upcoming Eclipses</div>
+<div id="eclipse-list" class="card-detail"></div>
+</div>
+<div class="card">
+<div class="card-label">Solstices & Equinoxes</div>
+<div id="solstice-equinox" class="card-detail"></div>
+</div>
+<div class="card">
+<div class="card-label">Meteor Showers</div>
+<div id="meteor-showers" class="card-detail"></div>
+</div>
+<div class="card">
+<div class="card-label">Planetary Conjunctions</div>
+<div id="conjunctions" class="card-detail"></div>
+</div>
+<div class="card" style="grid-column:span 2">
+<div class="card-label">Retrograde Periods</div>
+<div id="retrogrades"></div>
+</div>
+</div>
+</div>
+
+<!-- SKY SECTION -->
+<div class="section" id="sec-sky">
+<div class="section-title">Sky</div>
+<div class="grid grid-2">
+<div class="card">
+<div class="card-label">Visible Planets</div>
+<div id="planet-positions" class="card-detail"></div>
+</div>
+<div class="card">
+<div class="card-label">Zodiac Sign</div>
+<div id="zodiac-display" class="card-detail"></div>
+</div>
+<div class="card" style="grid-column:span 2">
+<div class="card-label">Star Chart</div>
+<canvas id="star-chart-canvas" width="700" height="500" style="width:100%" role="img" aria-label="Star chart showing visible stars and constellations at your location"></canvas>
+</div>
+<div class="card">
+<div class="card-label">Approx. Visible Stars</div>
+<div id="star-count" class="card-value large gold"></div>
+<div id="star-count-sub" class="card-sub"></div>
+<div style="margin-top:.8rem">
+<label style="font-size:.7rem;color:var(--text-dim)">Your Sky Quality (Bortle Class)</label>
+<select id="bortle-select" onchange="updateSky()" style="width:100%;margin-top:.3rem;padding:.4rem;background:var(--bg-deep);border:1px solid var(--border);color:var(--text-primary);border-radius:4px;font-family:var(--font-body);font-size:.8rem">
+<option value="1">1 — Excellent dark site</option>
+<option value="2">2 — Typical dark site</option>
+<option value="3">3 — Rural sky</option>
+<option value="4" selected>4 — Rural/suburban transition</option>
+<option value="5">5 — Suburban sky</option>
+<option value="6">6 — Bright suburban</option>
+<option value="7">7 — Suburban/urban transition</option>
+<option value="8">8 — City sky</option>
+<option value="9">9 — Inner-city sky</option>
+</select>
+</div>
+<div style="font-size:.65rem;color:var(--text-dim);margin-top:.5rem;font-style:italic">
+Estimate based on sun/moon position & local light pollution. Actual visibility depends on weather, humidity, and observer acuity.
+</div>
+</div>
+</div>
+</div>
+
+<!-- EARTH IN SPACE SECTION -->
+<div class="section" id="sec-earth">
+<div class="section-title">Earth in Space</div>
+<div class="grid grid-2">
+<div class="card">
+<div class="card-label">Distance from Sun</div>
+<div id="sun-distance" class="card-value"></div>
+<div id="sun-distance-sub" class="card-sub"></div>
+</div>
+<div class="card">
+<div class="card-label">Axial Tilt to Sun</div>
+<div id="axial-tilt" class="card-value"></div>
+<canvas id="tilt-canvas" width="240" height="160" style="margin-top:.5rem;width:100%"></canvas>
+</div>
+<div class="card">
+<div class="card-label">Space Odometer (Today)</div>
+<div id="space-odometer" class="card-value large gold"></div>
+<div id="odometer-breakdown" class="card-sub"></div>
+</div>
+<div class="card">
+<div class="card-label">Earth's Orbital Position</div>
+<canvas id="orbit-canvas" width="300" height="300" style="width:100%;max-width:300px;margin:0 auto;display:block"></canvas>
+</div>
+</div>
+</div>
+
+<!-- DEEP SPACE SECTION -->
+<div class="section" id="sec-deep">
+<div class="section-title">Deep Space</div>
+<div class="grid grid-3">
+<div class="card">
+<div class="card-label">Voyager 1</div>
+<div id="voyager1-dist" class="card-value"></div>
+<div id="voyager1-sub" class="card-sub"></div>
+</div>
+<div class="card">
+<div class="card-label">Voyager 2</div>
+<div id="voyager2-dist" class="card-value"></div>
+<div id="voyager2-sub" class="card-sub"></div>
+</div>
+<div class="card">
+<div class="card-label">New Horizons</div>
+<div id="newhorizons-dist" class="card-value"></div>
+<div id="newhorizons-sub" class="card-sub"></div>
+</div>
+<div class="card" style="grid-column:span 3" id="light-display">
+<div class="card-label">What Would Aliens See? — Earth's Light Echo</div>
+<canvas id="light-canvas" width="900" height="350" style="width:100%"></canvas>
+<div id="light-events" class="card-sub" style="margin-top:.5rem"></div>
+</div>
+</div>
+</div>
+
+<!-- GEOPHYSICAL SECTION -->
+<div class="section" id="sec-geo">
+<div class="section-title">Geophysical</div>
+<div class="grid grid-2">
+<div class="card" style="grid-column:span 2">
+<div class="card-label">Day Length Curve (Year)</div>
+<canvas id="daylength-curve" width="400" height="200" style="width:100%"></canvas>
+</div>
+</div>
+</div>
+
+<!-- CALENDARS & TIME SECTION -->
+<div class="section" id="sec-time">
+<div class="section-title">Calendars & Time</div>
+<div class="grid grid-3">
+<div class="card">
+<div class="card-label">Perpetual Calendar</div>
+<div id="cal-header" style="text-align:center;margin-bottom:.5rem">
+<button onclick="changeMonth(-1)" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1rem;padding:.2rem .5rem">◂</button>
+<span id="cal-month-year" style="font-family:var(--font-display);color:var(--gold);font-size:1.1rem"></span>
+<button onclick="changeMonth(1)" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1rem;padding:.2rem .5rem">▸</button>
+</div>
+<div id="calendar-grid" class="cal-grid"></div>
+</div>
+<div class="card">
+<div class="card-label">Date Representations</div>
+<div id="date-reps" class="card-detail"></div>
+</div>
+<div class="card">
+<div class="card-label">Alternate Calendars</div>
+<div id="alt-calendars" class="card-detail"></div>
+</div>
+<div class="card">
+<div class="card-label">Current Season</div>
+<div id="season-display" class="card-value"></div>
+<div id="season-progress" class="card-sub"></div>
+<div style="height:6px;background:var(--bg-deep);border-radius:3px;margin-top:.8rem;overflow:hidden">
+<div id="season-bar" style="height:100%;background:var(--gold);border-radius:3px;transition:width .5s"></div>
+</div>
+</div>
+<div class="card" style="grid-column:span 2">
+<div class="card-label">World Clock</div>
+<div id="world-clock" style="display:flex;flex-wrap:wrap;gap:.8rem"></div>
+</div>
+<div class="card">
+<div class="card-label">Unix Timestamp</div>
+<div id="unix-time" class="card-value" style="font-size:1.8rem"></div>
+<div id="unix-sub" class="card-sub"></div>
+</div>
+<div class="card" style="grid-column:span 2">
+<div class="card-label">Countdowns</div>
+<div id="countdowns" class="card-detail"></div>
+</div>
+</div>
+</div>
+
+</div>
+
+<script>
+// ============================================================
+// GRAND COMPLICATION — ASTRONOMICAL & TEMPORAL DASHBOARD
+// All calculations self-contained. No API calls.
+// IMPROVED VERSION: Bug fixes + Theme support
+// ============================================================
+
+// ---- CONSTANTS ----
+const DEG = Math.PI / 180;
+const RAD = 180 / Math.PI;
+const J2000 = 2451545.0; // Jan 1.5, 2000 TT
+
+// Time constants
+const MS_PER_SECOND = 1000;
+const MS_PER_MINUTE = 60 * MS_PER_SECOND;
+const MS_PER_HOUR = 60 * MS_PER_MINUTE;
+const MS_PER_DAY = 24 * MS_PER_HOUR;
+const DAYS_PER_YEAR = 365.25;
+const DAYS_PER_CENTURY = 36525;
+const MINUTES_PER_DAY = 1440;
+
+// Loop safety limit
+const MAX_ITERATIONS = 1000;
+
+// ---- THEME MANAGEMENT ----
+function initTheme() {
+  const savedTheme = localStorage.getItem('gc_theme') || 'dark';
+  setTheme(savedTheme);
+  
+  // Set up theme option click handlers
+  document.querySelectorAll('.theme-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setTheme(btn.dataset.theme);
+    });
+  });
+}
+
+function setTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('gc_theme', theme);
+  
+  // Update active state on buttons
+  document.querySelectorAll('.theme-option').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.theme === theme);
+  });
+  
+  // Re-render canvases with new theme colors (after brief delay for CSS to apply)
+  setTimeout(() => {
+    updateCounter = 0;
+    updateAll();
+  }, 50);
+}
+
+function getThemeColor(varName) {
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+}
+
+// ---- HiDPI CANVAS HELPER ----
+const _canvasLogical = new WeakMap();
+function getCtx(canvas) {
+  const dpr = window.devicePixelRatio || 1;
+  let info = _canvasLogical.get(canvas);
+  if (!info) {
+    const w = parseInt(canvas.getAttribute('width'));
+    const h = parseInt(canvas.getAttribute('height'));
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    info = { w, h };
+    _canvasLogical.set(canvas, info);
+  }
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, info.w, info.h);
+  return { ctx, w: info.w, h: info.h };
+}
+
+// ---- LOCATION MANAGEMENT ----
+let locations = [];
+let activeLocIndex = 0;
+let calViewYear, calViewMonth;
+let use24h = localStorage.getItem('gc_use24h') === 'true';
+
+// FIX: DOM element cache for performance
+const domCache = {};
+
+function cacheDOMElement(id) {
+  if (!domCache[id]) {
+    domCache[id] = document.getElementById(id);
+  }
+  return domCache[id];
+}
+
+// Call after DOM is ready to pre-cache frequently used elements
+function initDOMCache() {
+  const frequentIds = [
+    'unix-time', 'unix-sub', 'space-odometer', 'active-loc-display',
+    'moon-phase-text', 'moon-times', 'moon-info', 'sun-position',
+    'sun-times', 'golden-blue', 'twilight-display', 'eot-value', 'eot-sub',
+    'day-length', 'day-delta', 'sun-distance', 'sun-distance-sub',
+    'axial-tilt', 'odometer-breakdown', 'voyager1-dist', 'voyager1-sub',
+    'voyager2-dist', 'voyager2-sub', 'newhorizons-dist', 'newhorizons-sub',
+    'planet-positions', 'zodiac-display', 'star-count', 'star-count-sub',
+    'eclipse-list', 'solstice-equinox', 'meteor-showers', 'conjunctions',
+    'retrogrades', 'cal-month-year', 'calendar-grid', 'date-reps',
+    'alt-calendars', 'season-display', 'season-progress', 'season-bar',
+    'world-clock', 'countdowns', 'solar-cycle-info'
+  ];
+  frequentIds.forEach(id => cacheDOMElement(id));
+}
+
+function toggleTimeFormat() {
+  use24h = !use24h;
+  localStorage.setItem('gc_use24h', use24h);
+  document.getElementById('time-fmt-btn').textContent = use24h ? '24h' : '12h';
+  updateCounter = 0; // Force full refresh
+  updateAll();
+}
+
+function loadLocations() {
+  try {
+    const d = localStorage.getItem('gc_locations');
+    if (d) { locations = JSON.parse(d); }
+    const ai = localStorage.getItem('gc_active');
+    if (ai !== null) activeLocIndex = parseInt(ai);
+    if (activeLocIndex >= locations.length) activeLocIndex = 0;
+  } catch(e) { locations = []; activeLocIndex = 0; }
+}
+
+function saveLocations() {
+  localStorage.setItem('gc_locations', JSON.stringify(locations));
+  localStorage.setItem('gc_active', activeLocIndex.toString());
+}
+
+function getActiveLoc() {
+  if (locations.length === 0) return { label: 'Unknown', lat: 0, lng: 0 };
+  return locations[activeLocIndex];
+}
+
+function useGeolocation() {
+  const status = document.getElementById('modal-status');
+  status.textContent = 'Requesting location…';
+  if (!navigator.geolocation) { status.textContent = 'Geolocation not available.'; return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    locations.push({ label: 'My Location', lat: pos.coords.latitude, lng: pos.coords.longitude });
+    activeLocIndex = locations.length - 1; // FIX: Set to newly added location
+    saveLocations();
+    hideModal();
+    initApp();
+  }, err => {
+    status.textContent = 'Location denied. Please enter manually.';
+    showManualEntry();
+  });
+}
+
+function showManualEntry() { document.getElementById('manual-entry').style.display = 'block'; }
+
+function saveManualLocation() {
+  const lat = parseFloat(document.getElementById('loc-lat-input').value);
+  const lng = parseFloat(document.getElementById('loc-lng-input').value);
+  const label = document.getElementById('loc-label-input').value || 'Home';
+  if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    document.getElementById('modal-status').textContent = 'Please enter valid coordinates.';
+    return;
+  }
+  locations.push({ label, lat, lng });
+  activeLocIndex = locations.length - 1; // FIX: Set to newly added location
+  saveLocations();
+  hideModal();
+  initApp();
+}
+
+function hideModal() { document.getElementById('location-modal').classList.add('hidden'); }
+
+function toggleLocPanel() { document.getElementById('loc-panel').classList.toggle('open'); renderLocList(); }
+
+function renderLocList() {
+  const el = document.getElementById('loc-list');
+  el.innerHTML = '';
+  locations.forEach((loc, i) => {
+    const d = document.createElement('div');
+    d.className = 'loc-item' + (i === activeLocIndex ? ' active' : '');
+    d.innerHTML = `<div class="loc-label">${loc.label}</div>
+      <div class="loc-coords">${loc.lat.toFixed(4)}°, ${loc.lng.toFixed(4)}°</div>
+      <div class="loc-actions">
+        <button onclick="event.stopPropagation();setActive(${i})">Set Active</button>
+        <button onclick="event.stopPropagation();renameLocation(${i})">Rename</button>
+        ${locations.length > 1 ? `<button onclick="event.stopPropagation();deleteLocation(${i})">Delete</button>` : ''}
+      </div>`;
+    d.onclick = () => setActive(i);
+    el.appendChild(d);
+  });
+}
+
+function setActive(i) {
+  activeLocIndex = i;
+  saveLocations();
+  renderLocList();
+  updateAll();
+}
+
+function renameLocation(i) {
+  const name = prompt('New label:', locations[i].label);
+  if (name) { locations[i].label = name; saveLocations(); renderLocList(); updateAll(); }
+}
+
+function deleteLocation(i) {
+  if (locations.length <= 1) return;
+  locations.splice(i, 1);
+  if (activeLocIndex >= locations.length) activeLocIndex = locations.length - 1;
+  saveLocations();
+  renderLocList();
+  updateAll();
+}
+
+function showAddLocation() {
+  document.getElementById('add-loc-form').style.display = 'block';
+}
+
+function addNewLocation() {
+  const lat = parseFloat(document.getElementById('new-loc-lat').value);
+  const lng = parseFloat(document.getElementById('new-loc-lng').value);
+  const label = document.getElementById('new-loc-label').value || 'Location';
+  // FIX: Add proper coordinate validation (matching saveManualLocation)
+  if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) return;
+  locations.push({ label, lat, lng });
+  activeLocIndex = locations.length - 1; // FIX: Set to newly added location
+  saveLocations();
+  document.getElementById('add-loc-form').style.display = 'none';
+  document.getElementById('new-loc-label').value = '';
+  document.getElementById('new-loc-lat').value = '';
+  document.getElementById('new-loc-lng').value = '';
+  renderLocList();
+  updateAll();
+}
+
+function toggleFullscreen() {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().catch(()=>{});
+    document.body.classList.add('fullscreen');
+  } else {
+    document.exitFullscreen();
+    document.body.classList.remove('fullscreen');
+  }
+}
+
+// ---- ASTRONOMICAL CALCULATIONS (Meeus) ----
+
+function julianDate(date) {
+  const y = date.getUTCFullYear();
+  const m = date.getUTCMonth() + 1;
+  const d = date.getUTCDate() + date.getUTCHours()/24 + date.getUTCMinutes()/1440 + date.getUTCSeconds()/86400;
+  let Y = y, M = m;
+  if (M <= 2) { Y--; M += 12; }
+  const A = Math.floor(Y / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  return Math.floor(365.25 * (Y + 4716)) + Math.floor(30.6001 * (M + 1)) + d + B - 1524.5;
+}
+
+function centuriesJ2000(jd) { return (jd - J2000) / DAYS_PER_CENTURY; }
+
+// Solar longitude (ecliptic, geometric)
+function sunPosition(jd) {
+  const T = centuriesJ2000(jd);
+  // Mean elements
+  const L0 = (280.46646 + T * (36000.76983 + T * 0.0003032)) % 360;
+  const M = (357.52911 + T * (35999.05029 - T * 0.0001537)) % 360;
+  const e = 0.016708634 - T * (0.000042037 + T * 0.0000001267);
+  const Mrad = M * DEG;
+  // Equation of center
+  const C = (1.914602 - T * (0.004817 + T * 0.000014)) * Math.sin(Mrad)
+          + (0.019993 - T * 0.000101) * Math.sin(2 * Mrad)
+          + 0.000289 * Math.sin(3 * Mrad);
+  const sunLong = (L0 + C) % 360;
+  const sunAnomaly = M + C;
+  const R = (1.000001018 * (1 - e * e)) / (1 + e * Math.cos(sunAnomaly * DEG));
+  // Apparent longitude
+  const omega = 125.04 - 1934.136 * T;
+  const lambda = sunLong - 0.00569 - 0.00478 * Math.sin(omega * DEG);
+  // Obliquity
+  const eps0 = 23.0 + (26.0 + (21.448 - T * (46.815 + T * (0.00059 - T * 0.001813))) / 60) / 60;
+  const eps = eps0 + 0.00256 * Math.cos(omega * DEG);
+  // RA and Dec
+  const ra = Math.atan2(Math.cos(eps * DEG) * Math.sin(lambda * DEG), Math.cos(lambda * DEG)) * RAD;
+  const dec = Math.asin(Math.sin(eps * DEG) * Math.sin(lambda * DEG)) * RAD;
+  return { ra: (ra + 360) % 360, dec, lambda, R, L0, M, e, eps, C, sunLong };
+}
+
+// Equation of Time in minutes
+function equationOfTime(jd) {
+  const sun = sunPosition(jd);
+  const T = centuriesJ2000(jd);
+  const eps = sun.eps * DEG;
+  const L0 = sun.L0 * DEG;
+  const e = sun.e;
+  const M = sun.M * DEG;
+  const y = Math.tan(eps / 2); const y2 = y * y;
+  let E = y2 * Math.sin(2 * L0) - 2 * e * Math.sin(M) + 4 * e * y2 * Math.sin(M) * Math.cos(2 * L0)
+        - 0.5 * y2 * y2 * Math.sin(4 * L0) - 1.25 * e * e * Math.sin(2 * M);
+  return E * RAD * 4; // convert to minutes
+}
+
+// Sidereal time at Greenwich (degrees)
+function gmst(jd) {
+  const T = centuriesJ2000(jd);
+  let st = 280.46061837 + 360.98564736629 * (jd - J2000) + T * T * (0.000387933 - T / 38710000);
+  return ((st % 360) + 360) % 360;
+}
+
+// Horizontal coordinates
+function equatorialToHorizontal(ra, dec, lat, lng, jd) {
+  const lst = (gmst(jd) + lng) % 360;
+  const ha = ((lst - ra) + 360) % 360;
+  const haRad = ha * DEG;
+  const decRad = dec * DEG;
+  const latRad = lat * DEG;
+  const alt = Math.asin(Math.sin(latRad) * Math.sin(decRad) + Math.cos(latRad) * Math.cos(decRad) * Math.cos(haRad));
+  const az = Math.atan2(-Math.sin(haRad), Math.cos(latRad) * Math.tan(decRad) - Math.sin(latRad) * Math.cos(haRad));
+  return { alt: alt * RAD, az: ((az * RAD) + 360) % 360 };
+}
+
+// Sunrise/Sunset using simple algorithm
+function sunRiseSet(jd_noon, lat, lng, angle) {
+  // angle: -0.833 for sunrise/set, -6 civil, -12 nautical, -18 astronomical
+  const sun = sunPosition(jd_noon);
+  const decRad = sun.dec * DEG;
+  const latRad = lat * DEG;
+  const cosH = (Math.sin(angle * DEG) - Math.sin(latRad) * Math.sin(decRad)) / (Math.cos(latRad) * Math.cos(decRad));
+  if (cosH > 1) return { rise: null, set: null }; // never rises
+  if (cosH < -1) return { rise: null, set: null }; // never sets (perpetual)
+  const H = Math.acos(cosH) * RAD; // in degrees
+  // Convert to hours
+  const transit = (sun.ra - gmst(jd_noon) - lng) / 360;
+  const n_transit = ((transit % 1) + 1) % 1;
+  const rise_frac = n_transit - H / 360;
+  const set_frac = n_transit + H / 360;
+  return { rise: rise_frac, set: set_frac }; // fractions of a day in UTC
+}
+
+function fracToTime(frac, tzOffset) {
+  if (frac === null) return '—';
+  let minutes = ((frac * MINUTES_PER_DAY) + tzOffset * 60 + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  const h = Math.floor(minutes / 60);
+  const m = Math.floor(minutes % 60);
+  return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+}
+
+function fracToTimeAMPM(frac, tzOffset) {
+  if (frac === null) return '—';
+  let minutes = ((frac * MINUTES_PER_DAY) + tzOffset * 60 + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  let h = Math.floor(minutes / 60);
+  const m = Math.floor(minutes % 60);
+  if (use24h) {
+    return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}`;
+  }
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  if (h > 12) h -= 12;
+  if (h === 0) h = 12;
+  return `${h}:${m.toString().padStart(2,'0')} ${ampm}`;
+}
+
+function fmtClock(date) {
+  // Format a Date object respecting 12h/24h toggle
+  const h = date.getHours();
+  const m = date.getMinutes();
+  const s = date.getSeconds();
+  if (use24h) {
+    return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+  }
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  let h12 = h > 12 ? h - 12 : h;
+  if (h12 === 0) h12 = 12;
+  return `${h12}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')} ${ampm}`;
+}
+
+// Moon position (simplified)
+function moonPosition(jd) {
+  const T = centuriesJ2000(jd);
+  // Mean elements (Meeus Ch. 47)
+  const Lp = (218.3165 + 481267.8813 * T) % 360;
+  const D  = (297.8502 + 445267.1115 * T) % 360;
+  const M  = (357.5291 + 35999.0503 * T) % 360;
+  const Mp = (134.9634 + 477198.8676 * T) % 360;
+  const F  = (93.2720 + 483202.0175 * T) % 360;
+  
+  const Lp_r=Lp*DEG, D_r=D*DEG, M_r=M*DEG, Mp_r=Mp*DEG, F_r=F*DEG;
+  
+  // Principal terms for longitude
+  let lon = Lp
+    + 6.289 * Math.sin(Mp_r)
+    + 1.274 * Math.sin(2*D_r - Mp_r)
+    + 0.658 * Math.sin(2*D_r)
+    + 0.214 * Math.sin(2*Mp_r)
+    - 0.186 * Math.sin(M_r)
+    - 0.114 * Math.sin(2*F_r);
+    
+  let lat = 5.128 * Math.sin(F_r)
+    + 0.281 * Math.sin(Mp_r + F_r)
+    + 0.278 * Math.sin(Mp_r - F_r);
+    
+  let dist = 385001 - 20905 * Math.cos(Mp_r)
+    - 3699 * Math.cos(2*D_r - Mp_r)
+    - 2956 * Math.cos(2*D_r);
+    
+  lon = ((lon % 360) + 360) % 360;
+  
+  // Convert ecliptic to equatorial
+  const sun = sunPosition(jd);
+  const eps = sun.eps * DEG;
+  const lonRad = lon * DEG;
+  const latRad = lat * DEG;
+  
+  const ra = Math.atan2(
+    Math.sin(lonRad) * Math.cos(eps) - Math.tan(latRad) * Math.sin(eps),
+    Math.cos(lonRad)
+  ) * RAD;
+  const dec = Math.asin(
+    Math.sin(latRad) * Math.cos(eps) + Math.cos(latRad) * Math.sin(eps) * Math.sin(lonRad)
+  ) * RAD;
+  
+  return { ra: (ra + 360) % 360, dec, lon, lat, dist, D, Mp, M, F };
+}
+
+// Moon phase (0=new, 0.5=full)
+function moonPhase(jd) {
+  const sun = sunPosition(jd);
+  const moon = moonPosition(jd);
+  let elongation = moon.lon - sun.sunLong;
+  elongation = ((elongation % 360) + 360) % 360;
+  return elongation / 360; // 0=new, 0.5=full
+}
+
+function moonPhaseName(phase) {
+  if (phase < 0.025 || phase > 0.975) return 'New Moon';
+  if (phase < 0.225) return 'Waxing Crescent';
+  if (phase < 0.275) return 'First Quarter';
+  if (phase < 0.475) return 'Waxing Gibbous';
+  if (phase < 0.525) return 'Full Moon';
+  if (phase < 0.725) return 'Waning Gibbous';
+  if (phase < 0.775) return 'Last Quarter';
+  return 'Waning Crescent';
+}
+
+function moonIllumination(phase) {
+  return (1 - Math.cos(phase * 2 * Math.PI)) / 2 * 100;
+}
+
+// Moonrise/Moonset (approximate)
+function moonRiseSet(jd_noon, lat, lng) {
+  const moon = moonPosition(jd_noon);
+  const decRad = moon.dec * DEG;
+  const latRad = lat * DEG;
+  const h0 = -0.08;
+  const cosH = (Math.sin(h0 * DEG) - Math.sin(latRad) * Math.sin(decRad)) / (Math.cos(latRad) * Math.cos(decRad));
+  if (Math.abs(cosH) > 1) return { rise: null, set: null };
+  const H = Math.acos(cosH) * RAD;
+  const transit = (moon.ra - gmst(jd_noon) - lng) / 360;
+  const n_transit = ((transit % 1) + 1) % 1;
+  return { rise: n_transit - H / 360, set: n_transit + H / 360 };
+}
+
+// Planetary positions (simplified VSOP87-like)
+function planetPosition(jd, planet) {
+  const T = centuriesJ2000(jd);
+  const planets = {
+    mercury: { L:252.2509,Lr:149472.6747, a:0.387098, e:0.205635,er:-0.000000231, i:7.005,ir:-0.0060, Om:48.331,Omr:-0.1254, w:77.456,wr:0.1588 },
+    venus:   { L:181.9798,Lr:58517.8157,  a:0.723332, e:0.006772,er:-0.000047766, i:3.395,ir:0.0011, Om:76.680,Omr:-0.2780, w:131.564,wr:0.0048 },
+    mars:    { L:355.4330,Lr:19140.2993,  a:1.523679, e:0.093405,er:0.000090484,  i:1.850,ir:-0.0068, Om:49.558,Omr:-0.2950, w:336.060,wr:0.4439 },
+    jupiter: { L:34.3515,Lr:3034.9057,   a:5.20260,  e:0.048498,er:0.000016320,  i:1.303,ir:-0.0055, Om:100.464,Omr:0.1766, w:14.331,wr:0.2155 },
+    saturn:  { L:50.0774,Lr:1222.1138,   a:9.55491,  e:0.055509,er:-0.000034664, i:2.489,ir:-0.0039, Om:113.666,Omr:-0.2524, w:93.057,wr:0.7756 }
+  };
+  const p = planets[planet];
+  if (!p) return null;
+  
+  const L = (p.L + p.Lr * T) % 360;
+  const e = p.e + p.er * T;
+  
+  // Solve Kepler's equation
+  const M_deg = (L - p.w - p.wr * T);
+  const M = (((M_deg % 360) + 360) % 360) * DEG;
+  let E = M;
+  for (let i = 0; i < 10; i++) {
+    E = M + e * Math.sin(E);
+  }
+  
+  const xv = p.a * (Math.cos(E) - e);
+  const yv = p.a * Math.sqrt(1 - e*e) * Math.sin(E);
+  const v = Math.atan2(yv, xv);
+  const r = Math.sqrt(xv*xv + yv*yv);
+  
+  // Heliocentric ecliptic longitude
+  const lon = (((v * RAD) + p.w + p.wr * T) % 360 + 360) % 360;
+  
+  // Convert to geocentric (very simplified)
+  const sunPos = sunPosition(jd);
+  const earthLon = (sunPos.sunLong + 180) % 360;
+  const earthR = sunPos.R;
+  
+  // Geometric geocentric ecliptic coordinates
+  const lonRad = lon * DEG;
+  const earthLonRad = earthLon * DEG;
+  const xg = r * Math.cos(lonRad) - earthR * Math.cos(earthLonRad);
+  const yg = r * Math.sin(lonRad) - earthR * Math.sin(earthLonRad);
+  const geoLon = Math.atan2(yg, xg) * RAD;
+  
+  // To equatorial (simplified - ignoring lat)
+  const eps = sunPos.eps * DEG;
+  const geoLonRad = geoLon * DEG;
+  const ra = Math.atan2(Math.sin(geoLonRad) * Math.cos(eps), Math.cos(geoLonRad)) * RAD;
+  const dec = Math.asin(Math.sin(geoLonRad) * Math.sin(eps)) * RAD;
+  
+  return { ra: (ra + 360) % 360, dec, lon: (geoLon + 360) % 360, helioLon: lon, r };
+}
+
+// Zodiac calculations
+function tropicalZodiac(jd) {
+  const sun = sunPosition(jd);
+  const signs = ['Aries ♈','Taurus ♉','Gemini ♊','Cancer ♋','Leo ♌','Virgo ♍',
+                 'Libra ♎','Scorpio ♏','Sagittarius ♐','Capricorn ♑','Aquarius ♒','Pisces ♓'];
+  const lon = ((sun.sunLong % 360) + 360) % 360;
+  const signIdx = Math.floor(lon / 30);
+  const degree = lon % 30;
+  return `${signs[signIdx]} ${degree.toFixed(0)}°`;
+}
+
+function siderealZodiac(jd) {
+  const sun = sunPosition(jd);
+  // Sidereal offset (Lahiri ayanamsa approx)
+  const T = centuriesJ2000(jd);
+  const ayanamsa = 23.85 + 0.0139 * T;
+  const signs = ['Mesha','Vrishabha','Mithuna','Karka','Simha','Kanya',
+                 'Tula','Vrischika','Dhanus','Makara','Kumbha','Meena'];
+  const lon = (((sun.sunLong - ayanamsa) % 360) + 360) % 360;
+  const signIdx = Math.floor(lon / 30);
+  const degree = lon % 30;
+  return `${signs[signIdx]} ${degree.toFixed(0)}°`;
+}
+
+function constellationFromLon(lon) {
+  const consts = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo',
+                  'Libra','Scorpius','Sagittarius','Capricornus','Aquarius','Pisces'];
+  const idx = Math.floor(((lon % 360) + 360) % 360 / 30);
+  return consts[idx];
+}
+
+// ---- THREE.JS MOON ----
+let moonScene, moonCamera, moonRenderer, moonSphere, moonLight;
+
+function initMoon3D() {
+  const container = document.getElementById('moon-3d');
+  if (!container) return;
+  
+  // FIX: Check for WebGL support
+  if (!window.WebGLRenderingContext) {
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);text-align:center;padding:1rem">WebGL not supported.<br>Moon visualization unavailable.</div>';
+    return;
+  }
+  
+  const w = container.clientWidth || 320;
+  moonScene = new THREE.Scene();
+  moonCamera = new THREE.PerspectiveCamera(35, w / 320, 0.1, 100);
+  moonCamera.position.z = 3.2;
+  
+  try {
+    moonRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  } catch (e) {
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-dim);text-align:center;padding:1rem">WebGL initialization failed.<br>Moon visualization unavailable.</div>';
+    return;
+  }
+  
+  moonRenderer.setSize(w, 320);
+  moonRenderer.setPixelRatio(window.devicePixelRatio);
+  container.appendChild(moonRenderer.domElement);
+  
+  // Create moon texture procedurally with enhanced detail
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  const imageData = ctx.createImageData(1024, 512);
+  const data = imageData.data;
+  
+  // Simple 2D noise function
+  function noise2d(x, y, freq) {
+    const n = Math.sin(x * freq * 123.456) * Math.cos(y * freq * 789.012) +
+              Math.sin((x + y) * freq * 456.789) * 0.5;
+    return (n + 1.5) / 3;
+  }
+  
+  // Seeded random for consistent results
+  let seed = 42;
+  function rand() { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; }
+  
+  for (let y = 0; y < 512; y++) {
+    for (let x = 0; x < 1024; x++) {
+      const idx = (y * 1024 + x) * 4;
+      const nx = x / 1024;
+      const ny = y / 512;
+      
+      // Highlands base (lighter)
+      let val = 155;
+      
+      // Large-scale maria (dark regions)
+      const maria = noise2d(nx, ny, 3) * 0.5 + noise2d(nx, ny, 5) * 0.3 + noise2d(nx, ny, 8) * 0.2;
+      const basin1 = Math.exp(-((nx-0.35)**2 + (ny-0.4)**2) * 15) * 0.8;
+      const basin2 = Math.exp(-((nx-0.55)**2 + (ny-0.5)**2) * 20) * 0.6;
+      const basin3 = Math.exp(-((nx-0.45)**2 + (ny-0.55)**2) * 18) * 0.7;
+      const basin4 = Math.exp(-((nx-0.25)**2 + (ny-0.45)**2) * 12) * 0.5;
+      const basin5 = Math.exp(-((nx-0.6)**2 + (ny-0.35)**2) * 25) * 0.4;
+      const mariaBlend = Math.max(basin1, basin2, basin3, basin4, basin5, maria > 0.6 ? (maria-0.6)*0.5 : 0);
+      
+      val -= mariaBlend * 50;
+      
+      // Medium-scale texture variation
+      val += (noise2d(nx, ny, 15) - 0.5) * 20;
+      val += (noise2d(nx, ny, 30) - 0.5) * 10;
+      
+      // Fine grain
+      val += (rand() - 0.5) * 12;
+      
+      // Crater highlights
+      const craterNoise = noise2d(nx, ny, 40);
+      if (craterNoise > 0.85) val += 15;
+      if (craterNoise < 0.1) val -= 10;
+      
+      // Color variation
+      const r_val = Math.max(60, Math.min(210, val + 3));
+      const g_val = Math.max(58, Math.min(205, val + 1));
+      const b_val = Math.max(55, Math.min(195, val - 4));
+      
+      data[idx] = r_val;
+      data[idx+1] = g_val;
+      data[idx+2] = b_val;
+      data[idx+3] = 255;
+    }
+  }
+  ctx.putImageData(imageData, 0, 0);
+  
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.anisotropy = 4;
+  const geo = new THREE.SphereGeometry(1, 96, 96);
+  const mat = new THREE.MeshPhongMaterial({
+    map: texture,
+    shininess: 1,
+    specular: new THREE.Color(0x080808),
+    emissive: new THREE.Color(0x000000)
+  });
+  moonSphere = new THREE.Mesh(geo, mat);
+  moonScene.add(moonSphere);
+  
+  moonScene.add(new THREE.AmbientLight(0x0a0a14, 0.15));
+  
+  // FIX: Create reusable directional light instead of creating/destroying each frame
+  moonLight = new THREE.DirectionalLight(0xfff5d0, 2.0);
+  moonScene.add(moonLight);
+}
+
+function updateMoon3D(phase) {
+  if (!moonScene || !moonLight) return;
+  
+  // FIX: Reuse existing light, just update position (prevents memory churn)
+  const angle = phase * Math.PI * 2;
+  moonLight.position.set(Math.sin(angle) * 5, 0.3, -Math.cos(angle) * 5);
+  
+  if (moonSphere) {
+    moonSphere.rotation.y += 0.001;
+  }
+  
+  moonRenderer.render(moonScene, moonCamera);
+}
+
+// ---- CALENDAR CONVERSIONS ----
+
+function gregorianToHijri(y, m, d) {
+  const jd = julianDate(new Date(Date.UTC(y, m-1, d, 12)));
+  const l = Math.floor(jd - 1948439.5 + 10632);
+  const n = Math.floor((l - 1) / 10631);
+  const l2 = l - 10631 * n + 354;
+  const j = Math.floor((10985-l2)/5316) * Math.floor((50*l2)/17719) + Math.floor(l2/5670) * Math.floor((43*l2)/15238);
+  const l3 = l2 - Math.floor((30-j)/15) * Math.floor((17719*j)/50) - Math.floor(j/16) * Math.floor((15238*j)/43) + 29;
+  const mh = Math.floor((24 * l3) / 709);
+  const dh = l3 - Math.floor((709 * mh) / 24);
+  const yh = 30*n + j - 30;
+  return { year: yh, month: mh, day: dh };
+}
+
+function gregorianToHebrew(gy, gm, gd) {
+  const months = ['Tishrei','Cheshvan','Kislev','Tevet','Shevat','Adar','Nisan','Iyar','Sivan','Tammuz','Av','Elul'];
+  const monthsLeap = ['Tishrei','Cheshvan','Kislev','Tevet','Shevat','Adar I','Adar II','Nisan','Iyar','Sivan','Tammuz','Av','Elul'];
+  
+  function hebrewElapsedDays(year) {
+    const monthsElapsed = Math.floor((235 * year - 234) / 19);
+    const partsElapsed = 12084 + 13753 * monthsElapsed;
+    const day = 29 * monthsElapsed + Math.floor(partsElapsed / 25920);
+    const parts = partsElapsed % 25920;
+    const altDay = day + 1;
+    const dw = altDay % 7;
+    if ((parts >= 19440) || 
+        (dw === 2 && parts >= 9924 && !isHebrewLeapYear(year)) ||
+        (dw === 1 && parts >= 16789 && isHebrewLeapYear(year - 1))) {
+      return altDay + 1;
+    }
+    if (dw === 0 || dw === 3 || dw === 5) {
+      return altDay + 1;
+    }
+    return altDay;
+  }
+  
+  function isHebrewLeapYear(year) {
+    return ((7 * year + 1) % 19) < 7;
+  }
+  
+  function hebrewYearDays(year) {
+    return hebrewElapsedDays(year + 1) - hebrewElapsedDays(year);
+  }
+  
+  function hebrewMonthDays(year, month) {
+    const yearDays = hebrewYearDays(year);
+    const isLeap = isHebrewLeapYear(year);
+    const monthLengths = isLeap 
+      ? [30, 0, 0, 29, 30, 30, 29, 30, 29, 30, 29, 30, 29]
+      : [30, 0, 0, 29, 30, 0, 30, 29, 30, 29, 30, 29];
+    if (yearDays === 355 || yearDays === 385) { monthLengths[1] = 30; monthLengths[2] = 30; }
+    else if (yearDays === 353 || yearDays === 383) { monthLengths[1] = 29; monthLengths[2] = 29; }
+    else { monthLengths[1] = 29; monthLengths[2] = 30; }
+    if (!isLeap) monthLengths[5] = 29;
+    return monthLengths[month - 1];
+  }
+  
+  const jd = julianDate(new Date(Date.UTC(gy, gm-1, gd, 12)));
+  const hebrewEpoch = 347995.5;
+  const daysSinceEpoch = Math.floor(jd - hebrewEpoch);
+  
+  let year = Math.floor((daysSinceEpoch + 1) / 365.25) + 1;
+  while (hebrewElapsedDays(year) > daysSinceEpoch) year--;
+  
+  const isLeap = isHebrewLeapYear(year);
+  let dayInYear = daysSinceEpoch - hebrewElapsedDays(year) + 1;
+  
+  let month = 1;
+  const monthList = isLeap ? monthsLeap : months;
+  const numMonths = isLeap ? 13 : 12;
+  
+  while (month < numMonths && dayInYear > hebrewMonthDays(year, month)) {
+    dayInYear -= hebrewMonthDays(year, month);
+    month++;
+  }
+  
+  return { year, month: monthList[month - 1], day: dayInYear };
+}
+
+function persianToJD(py, pm, pd) {
+  const epbase = py - (py >= 0 ? 474 : 473);
+  const epyear = 474 + ((epbase % 2820) + 2820) % 2820;
+  return pd 
+       + (pm <= 7 ? (pm - 1) * 31 : (pm - 1) * 30 + 6)
+       + Math.floor((epyear * 682 - 110) / 2816)
+       + (epyear - 1) * 365
+       + Math.floor(epbase / 2820) * 1029983
+       + 1948319.5;
+}
+
+function gregorianToPersian(gy, gm, gd) {
+  const jd = julianDate(new Date(Date.UTC(gy, gm-1, gd, 12)));
+  
+  const depoch = jd - persianToJD(475, 1, 1);
+  const cycle = Math.floor(depoch / 1029983);
+  const cyear = depoch % 1029983;
+  
+  let ycycle;
+  if (cyear === 1029982) {
+    ycycle = 2820;
+  } else {
+    const aux1 = Math.floor(cyear / 366);
+    const aux2 = cyear % 366;
+    ycycle = Math.floor((2134 * aux1 + 2816 * aux2 + 2815) / 1028522) + aux1 + 1;
+  }
+  
+  const py = ycycle + 2820 * cycle + 474;
+  const pyear = py > 0 ? py : py - 1;
+  
+  const yday = Math.floor(jd - persianToJD(pyear, 1, 1) + 1);
+  
+  let pm, pd;
+  if (yday <= 186) {
+    pm = Math.ceil(yday / 31);
+    pd = yday - (pm - 1) * 31;
+  } else {
+    pm = Math.ceil((yday - 186) / 30) + 6;
+    pd = yday - 186 - (pm - 7) * 30;
+  }
+  
+  return { year: pyear, month: pm, day: Math.max(1, Math.floor(pd)) };
+}
+
+function gregorianToEthiopian(gy, gm, gd) {
+  const jd = julianDate(new Date(Date.UTC(gy, gm-1, gd, 12)));
+  const ethiopianEpoch = 1724220.5;
+  
+  const r = Math.floor(jd - ethiopianEpoch);
+  
+  const n = Math.floor(r / 1461);
+  const r_mod = r % 1461;
+  
+  let y_in_cycle, day_of_year;
+  if (r_mod < 365) {
+    y_in_cycle = 0;
+    day_of_year = r_mod + 1;
+  } else if (r_mod < 730) {
+    y_in_cycle = 1;
+    day_of_year = r_mod - 365 + 1;
+  } else if (r_mod < 1095) {
+    y_in_cycle = 2;
+    day_of_year = r_mod - 730 + 1;
+  } else {
+    y_in_cycle = 3;
+    day_of_year = r_mod - 1095 + 1;
+  }
+  
+  const ey = n * 4 + y_in_cycle + 1;
+  
+  let em, ed;
+  if (day_of_year <= 360) {
+    em = Math.ceil(day_of_year / 30);
+    ed = day_of_year - (em - 1) * 30;
+  } else {
+    em = 13;
+    ed = day_of_year - 360;
+  }
+  
+  return { year: ey, month: em, day: ed };
+}
+
+function gregorianToMayan(gy, gm, gd) {
+  const jd = julianDate(new Date(Date.UTC(gy, gm-1, gd, 12)));
+  const correlation = 584283;
+  const d = Math.floor(jd - 0.5) - correlation;
+  const baktun = Math.floor(d / 144000);
+  let rem = d % 144000;
+  const katun = Math.floor(rem / 7200);
+  rem = rem % 7200;
+  const tun = Math.floor(rem / 360);
+  rem = rem % 360;
+  const uinal = Math.floor(rem / 20);
+  const kin = rem % 20;
+  return `${baktun}.${katun}.${tun}.${uinal}.${kin}`;
+}
+
+function chineseYear(gy, gm, gd) {
+  const stems = ['Geng','Xin','Ren','Gui','Jia','Yi','Bing','Ding','Wu','Ji'];
+  const branches = ['Shen','You','Xu','Hai','Zi','Chou','Yin','Mao','Chen','Si','Wu','Wei'];
+  const animals = ['Monkey','Rooster','Dog','Pig','Rat','Ox','Tiger','Rabbit','Dragon','Snake','Horse','Goat'];
+  
+  const lnyApprox = getLunarNewYearApprox(gy);
+  const currentDate = new Date(gy, (gm || 1) - 1, gd || 1);
+  
+  let chineseGy = gy;
+  if (currentDate < lnyApprox) {
+    chineseGy = gy - 1;
+  }
+  
+  const idx = (chineseGy - 4) % 60;
+  const stem = stems[((idx % 10) + 10) % 10];
+  const branch = branches[((idx % 12) + 12) % 12];
+  const animal = animals[((idx % 12) + 12) % 12];
+  const cyear = chineseGy + 2697;
+  
+  return { stem, branch, animal, year: cyear, gregorianYear: chineseGy };
+}
+
+function getLunarNewYearApprox(year) {
+  const goldenNumber = (year % 19) + 1;
+  const lnyTable = [
+    [2, 5], [1, 25], [2, 13], [2, 2], [1, 22], [2, 10], [1, 30], [2, 18], [2, 7],
+    [1, 27], [2, 15], [2, 4], [1, 24], [2, 12], [2, 1], [1, 21], [2, 9], [1, 29], [2, 17]
+  ];
+  const [month, day] = lnyTable[goldenNumber - 1] || [2, 1];
+  return new Date(year, month - 1, day);
+}
+
+// ---- ECLIPSE PREDICTIONS ----
+
+function jdToDate(jd) {
+  const Z = Math.floor(jd + 0.5);
+  const F = jd + 0.5 - Z;
+  let A = Z;
+  if (Z >= 2299161) {
+    const alpha = Math.floor((Z - 1867216.25) / 36524.25);
+    A = Z + 1 + alpha - Math.floor(alpha / 4);
+  }
+  const B = A + 1524;
+  const C = Math.floor((B - 122.1) / 365.25);
+  const D = Math.floor(365.25 * C);
+  const E = Math.floor((B - D) / 30.6001);
+  const day = B - D - Math.floor(30.6001 * E) + F;
+  const month = E < 14 ? E - 1 : E - 13;
+  const yr = month > 2 ? C - 4716 : C - 4715;
+  return new Date(Date.UTC(yr, month - 1, Math.floor(day)));
+}
+
+function computeNewAndFullMoons(year) {
+  const moons = [];
+  const k0 = Math.floor((year - 2000) * 12.3685);
+  
+  for (let i = -1; i <= 14; i++) {
+    for (const phase of [0, 0.5]) {
+      const k = k0 + i + phase;
+      const T = k / 1236.85;
+      
+      let JDE = 2451550.09766 + 29.530588861 * k
+                + 0.00015437 * T * T
+                - 0.000000150 * T * T * T
+                + 0.00000000073 * T * T * T * T;
+      
+      const M = (2.5534 + 29.10535670 * k - 0.0000014 * T * T - 0.00000011 * T * T * T) * DEG;
+      const Mp = (201.5643 + 385.81693528 * k + 0.0107582 * T * T + 0.00001238 * T * T * T - 0.000000058 * T * T * T * T) * DEG;
+      const F = (160.7108 + 390.67050284 * k - 0.0016118 * T * T - 0.00000227 * T * T * T + 0.000000011 * T * T * T * T) * DEG;
+      const Om = (124.7746 - 1.56375588 * k + 0.0020672 * T * T + 0.00000215 * T * T * T) * DEG;
+      
+      if (phase === 0) {
+        JDE += -0.40720 * Math.sin(Mp)
+             + 0.17241 * Math.sin(M)
+             + 0.01608 * Math.sin(2 * Mp)
+             + 0.01039 * Math.sin(2 * F)
+             + 0.00739 * Math.sin(Mp - M)
+             - 0.00514 * Math.sin(Mp + M)
+             + 0.00208 * Math.sin(2 * M);
+      } else {
+        JDE += -0.40614 * Math.sin(Mp)
+             + 0.17302 * Math.sin(M)
+             + 0.01614 * Math.sin(2 * Mp)
+             + 0.01043 * Math.sin(2 * F)
+             + 0.00734 * Math.sin(Mp - M)
+             - 0.00515 * Math.sin(Mp + M)
+             + 0.00209 * Math.sin(2 * M);
+      }
+      
+      const date = jdToDate(JDE);
+      
+      let Fmod = ((F * RAD % 360) + 360) % 360;
+      if (Fmod > 180) Fmod = 360 - Fmod;
+      
+      if (Fmod < 18) {
+        const type = phase === 0 ? 'Solar Eclipse' : 'Lunar Eclipse';
+        const desc = Fmod < 11 ? 'Total/Annular' : 'Partial';
+        if (date.getFullYear() === year || date.getFullYear() === year + 1) {
+          moons.push({ date, type: `${desc} ${type}`, phase });
+        }
+      }
+    }
+  }
+  
+  return moons;
+}
+
+function getUpcomingEclipses(year) {
+  const eclipses = computeNewAndFullMoons(year);
+  const nextYear = computeNewAndFullMoons(year + 1);
+  
+  const all = [...eclipses, ...nextYear]
+    .filter(e => e.date.getFullYear() >= year)
+    .sort((a, b) => a.date - b.date)
+    .slice(0, 6);
+  
+  return all.map(e => ({
+    type: e.type,
+    date: e.date.toISOString().split('T')[0]
+  }));
+}
+
+function isLeapYear(year) {
+  return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+}
+
+// ---- SOLSTICES & EQUINOXES ----
+
+function solsticesEquinoxes(year) {
+  const Y = (year - 2000) / 1000;
+  
+  const marchEq = 2451623.80984 + 365242.37404 * Y + 0.05169 * Y*Y - 0.00411 * Y*Y*Y - 0.00057 * Y*Y*Y*Y;
+  const juneSol = 2451716.56767 + 365241.62603 * Y + 0.00325 * Y*Y + 0.00888 * Y*Y*Y - 0.00030 * Y*Y*Y*Y;
+  const septEq = 2451810.21715 + 365242.01767 * Y - 0.11575 * Y*Y + 0.00337 * Y*Y*Y + 0.00078 * Y*Y*Y*Y;
+  const decSol = 2451900.05952 + 365242.74049 * Y - 0.06223 * Y*Y - 0.00823 * Y*Y*Y + 0.00032 * Y*Y*Y*Y;
+  
+  return {
+    marchEquinox: jdToDate(marchEq),
+    juneSolstice: jdToDate(juneSol),
+    septEquinox: jdToDate(septEq),
+    decSolstice: jdToDate(decSol)
+  };
+}
+
+// ---- METEOR SHOWERS ----
+function getMeteorShowers(year) {
+  return [
+    { name: 'Quadrantids', peak: `${year}-01-04`, zhr: 120, constellation: 'Boötes', start: `${year}-01-01`, end: `${year}-01-06` },
+    { name: 'Lyrids', peak: `${year}-04-22`, zhr: 18, constellation: 'Lyra', start: `${year}-04-16`, end: `${year}-04-25` },
+    { name: 'Eta Aquariids', peak: `${year}-05-06`, zhr: 50, constellation: 'Aquarius', start: `${year}-04-19`, end: `${year}-05-28` },
+    { name: 'Delta Aquariids', peak: `${year}-07-30`, zhr: 25, constellation: 'Aquarius', start: `${year}-07-12`, end: `${year}-08-23` },
+    { name: 'Perseids', peak: `${year}-08-12`, zhr: 100, constellation: 'Perseus', start: `${year}-07-17`, end: `${year}-08-24` },
+    { name: 'Orionids', peak: `${year}-10-21`, zhr: 20, constellation: 'Orion', start: `${year}-10-02`, end: `${year}-11-07` },
+    { name: 'Leonids', peak: `${year}-11-17`, zhr: 15, constellation: 'Leo', start: `${year}-11-06`, end: `${year}-11-30` },
+    { name: 'Geminids', peak: `${year}-12-14`, zhr: 150, constellation: 'Gemini', start: `${year}-12-04`, end: `${year}-12-20` },
+    { name: 'Ursids', peak: `${year}-12-22`, zhr: 10, constellation: 'Ursa Minor', start: `${year}-12-17`, end: `${year}-12-26` }
+  ];
+}
+
+// ---- RETROGRADE PERIODS ----
+function computeRetrogrades(year) {
+  const planets = ['Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn'];
+  const planetKeys = ['mercury', 'venus', 'mars', 'jupiter', 'saturn'];
+  const results = [];
+  
+  planets.forEach((planet, pi) => {
+    const periods = [];
+    let inRetrograde = false;
+    let retroStart = null;
+    
+    for (let d = -30; d <= 395; d++) {
+      const date1 = new Date(year, 0, d);
+      const date2 = new Date(year, 0, d + 1);
+      const jd1 = julianDate(date1);
+      const jd2 = julianDate(date2);
+      
+      const pos1 = planetPosition(jd1, planetKeys[pi]);
+      const pos2 = planetPosition(jd2, planetKeys[pi]);
+      
+      if (!pos1 || !pos2) continue;
+      
+      let dLon = pos2.lon - pos1.lon;
+      if (dLon > 180) dLon -= 360;
+      if (dLon < -180) dLon += 360;
+      
+      const isRetro = dLon < 0;
+      
+      if (isRetro && !inRetrograde) {
+        inRetrograde = true;
+        retroStart = date1;
+      } else if (!isRetro && inRetrograde) {
+        inRetrograde = false;
+        if (retroStart) {
+          const startYear = retroStart.getFullYear();
+          const endYear = date1.getFullYear();
+          if (startYear === year || endYear === year) {
+            periods.push([
+              retroStart.toISOString().split('T')[0],
+              date1.toISOString().split('T')[0]
+            ]);
+          }
+        }
+      }
+    }
+    
+    results.push({ planet, periods });
+  });
+  
+  return results;
+}
+
+const _retrogradeCache = {};
+function getRetrogrades(year) {
+  if (!_retrogradeCache[year]) {
+    _retrogradeCache[year] = computeRetrogrades(year);
+  }
+  return _retrogradeCache[year];
+}
+
+// ---- VOYAGER/NEW HORIZONS DISTANCE ----
+function probeDistance(refEpochUnix, refDistKm, velocityKms) {
+  const now = Date.now() / 1000;
+  const elapsed = now - refEpochUnix;
+  return refDistKm + velocityKms * elapsed;
+}
+
+const AU_KM = 149597870.7;
+const V1_REF = { epoch: Date.UTC(2025,0,1)/1000, dist: 164.0 * AU_KM, vel: 17.0 };
+const V2_REF = { epoch: Date.UTC(2025,0,1)/1000, dist: 137.5 * AU_KM, vel: 15.3 };
+const NH_REF = { epoch: Date.UTC(2025,0,1)/1000, dist: 60.0 * AU_KM, vel: 13.8 };
+
+// ---- SPACE ODOMETER ----
+function spaceOdometer(lat) {
+  const now = new Date();
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const elapsed = (now - startOfDay) / MS_PER_SECOND;
+  
+  const earthRadius = 6371;
+  const rotSpeed = (2 * Math.PI * earthRadius * Math.cos(lat * DEG)) / 86400;
+  const orbitalSpeed = 29.78;
+  const galaxySpeed = 230;
+  
+  const combinedSpeed = Math.sqrt(rotSpeed*rotSpeed + orbitalSpeed*orbitalSpeed + galaxySpeed*galaxySpeed);
+  const total = combinedSpeed * elapsed;
+  
+  return { total, rotSpeed, orbitalSpeed, galaxySpeed, combinedSpeed, elapsed };
+}
+
+// ---- STAR CHART DATA ----
+const BRIGHT_STARS = [
+  [6.75, -16.72, -1.46, 'Sirius'], [6.40, 7.41, 0.34, 'Procyon'],
+  [5.92, 7.41, 0.42, 'Betelgeuse'], [5.24, -8.20, 0.12, 'Rigel'],
+  [5.68, -1.94, 1.70, 'Alnilam'], [14.26, 19.18, -0.05, 'Arcturus'],
+  [18.62, 38.78, 0.03, 'Vega'], [20.69, 45.28, 1.25, 'Deneb'],
+  [19.85, 8.87, 0.76, 'Altair'], [7.65, 5.22, 1.58, 'Pollux'],
+  [7.58, 31.89, 1.14, 'Castor'], [5.42, 46.00, 0.08, 'Capella'],
+  [1.63, -57.24, 0.46, 'Achernar'], [5.55, -5.91, 2.09, 'Mintaka'],
+  [22.96, -29.62, 1.16, 'Fomalhaut'], [13.42, -11.16, 0.97, 'Spica'],
+  [10.14, 11.97, 1.35, 'Regulus'], [12.44, -63.10, 0.77, 'Mimosa'],
+  [12.80, -59.69, 1.28, 'Gacrux'], [4.60, 16.51, 0.85, 'Aldebaran'],
+  [16.49, -26.43, 0.96, 'Antares'], [2.12, 89.26, 1.98, 'Polaris'],
+  [12.26, 57.03, 1.77, 'Alioth'], [11.06, 61.75, 1.79, 'Dubhe'],
+  [13.79, 49.31, 1.86, 'Alkaid'], [0.44, 29.09, 2.06, 'Alpheratz'],
+  [1.16, 35.62, 2.07, 'Mirach'], [0.14, 15.18, 2.08, 'Algenib'],
+  [0.68, 56.54, 2.23, 'Schedar'], [23.08, 28.08, 2.49, 'Markab']
+];
+
+// ---- "WHAT WOULD ALIENS SEE?" ----
+const LIGHT_SPEED_KM_S = 299792.458;
+const LIGHT_YEAR_KM = LIGHT_SPEED_KM_S * 86400 * DAYS_PER_YEAR; // seconds/day * days/year
+
+const LIGHT_EVENTS = [
+  { name: 'First Radio Broadcast', date: new Date(1906, 11, 24), note: 'Fessenden\'s voice' },
+  { name: 'First TV Broadcast', date: new Date(1928, 8, 11), note: 'Baird\'s system' },
+  { name: 'WWII Ends', date: new Date(1945, 8, 2), note: 'Global radio coverage' },
+  { name: 'Moon Landing', date: new Date(1969, 6, 20), note: 'Apollo 11' },
+  { name: 'Fall of Berlin Wall', date: new Date(1989, 10, 9), note: 'Worldwide broadcast' },
+  { name: 'First Tweet', date: new Date(2006, 2, 21), note: 'Social media begins' },
+];
+
+// ---- WORLD CLOCK ZONES ----
+const worldClockZones = [
+  { label: 'UTC', tz: 'UTC' },
+  { label: 'London', tz: 'Europe/London' },
+  { label: 'Paris', tz: 'Europe/Paris' },
+  { label: 'New York', tz: 'America/New_York' },
+  { label: 'Tokyo', tz: 'Asia/Tokyo' },
+  { label: 'Sydney', tz: 'Australia/Sydney' },
+  { label: 'Los Angeles', tz: 'America/Los_Angeles' },
+  { label: 'São Paulo', tz: 'America/Sao_Paulo' },
+];
+
+// FIX: Renamed to avoid conflict with local timezone function
+// Improved with better error handling for DST edge cases
+function getTimezoneOffsetForZone(tz, date) {
+  try {
+    // Use Intl API for more reliable timezone offset calculation
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false,
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric'
+    });
+    
+    const utcFormatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'UTC',
+      hour: 'numeric',
+      minute: 'numeric',
+      hour12: false,
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric'
+    });
+    
+    // Parse the formatted dates
+    const tzParts = formatter.formatToParts(date);
+    const utcParts = utcFormatter.formatToParts(date);
+    
+    const getPart = (parts, type) => parseInt(parts.find(p => p.type === type)?.value || '0');
+    
+    const tzHour = getPart(tzParts, 'hour');
+    const tzMin = getPart(tzParts, 'minute');
+    const tzDay = getPart(tzParts, 'day');
+    
+    const utcHour = getPart(utcParts, 'hour');
+    const utcMin = getPart(utcParts, 'minute');
+    const utcDay = getPart(utcParts, 'day');
+    
+    let hourDiff = tzHour - utcHour;
+    const minDiff = (tzMin - utcMin) / 60;
+    
+    // Handle day boundary
+    if (tzDay !== utcDay) {
+      hourDiff += tzDay > utcDay ? 24 : -24;
+    }
+    
+    return hourDiff + minDiff;
+  } catch (e) {
+    // Fallback to original method if Intl API fails
+    try {
+      const utcDate = new Date(date.toLocaleString('en-US', { timeZone: 'UTC' }));
+      const tzDate = new Date(date.toLocaleString('en-US', { timeZone: tz }));
+      return (tzDate - utcDate) / MS_PER_HOUR;
+    } catch (e2) {
+      return 0;
+    }
+  }
+}
+
+function formatTimeInZone(date, tz, use24h) {
+  try {
+    const options = { 
+      timeZone: tz, 
+      hour: '2-digit', 
+      minute: '2-digit', 
+      second: '2-digit',
+      hour12: !use24h 
+    };
+    return date.toLocaleTimeString('en-US', options);
+  } catch (e) {
+    return '--:--:--';
+  }
+}
+
+// Local timezone offset (for local calculations)
+function getLocalTimezoneOffset() {
+  return -new Date().getTimezoneOffset() / 60;
+}
+
+// ============================================================
+// UPDATE FUNCTIONS
+// ============================================================
+
+function updateActiveLocDisplay() {
+  const loc = getActiveLoc();
+  document.getElementById('active-loc-display').textContent = 
+    `${loc.label} · ${loc.lat.toFixed(2)}°, ${loc.lng.toFixed(2)}°`;
+}
+
+function updateMoon() {
+  const now = new Date();
+  const jd = julianDate(now);
+  const phase = moonPhase(jd);
+  const name = moonPhaseName(phase);
+  const illum = moonIllumination(phase);
+  
+  updateMoon3D(phase);
+  
+  document.getElementById('moon-phase-text').innerHTML = 
+    `<span class="gold">${name}</span> · ${illum.toFixed(1)}% illuminated`;
+  
+  const loc = getActiveLoc();
+  const tz = getLocalTimezoneOffset();
+  const noon_jd = julianDate(new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 12)));
+  const mrs = moonRiseSet(noon_jd, loc.lat, loc.lng);
+  const moon = moonPosition(jd);
+  const moonHz = equatorialToHorizontal(moon.ra, moon.dec, loc.lat, loc.lng, jd);
+  
+  document.getElementById('moon-times').innerHTML = 
+    `Moonrise: <span class="gold">${fracToTimeAMPM(mrs.rise, tz)}</span><br>
+     Moonset: <span class="gold">${fracToTimeAMPM(mrs.set, tz)}</span>`;
+  
+  document.getElementById('moon-info').innerHTML = 
+    `Altitude: ${moonHz.alt.toFixed(1)}°<br>
+     Azimuth: ${moonHz.az.toFixed(1)}°<br>
+     Distance: ${Math.round(moon.dist).toLocaleString()} km<br>
+     Ecliptic Lon: ${moon.lon.toFixed(1)}°`;
+}
+
+function updateSun() {
+  const now = new Date();
+  const jd = julianDate(now);
+  const loc = getActiveLoc();
+  const tz = getLocalTimezoneOffset();
+  const sun = sunPosition(jd);
+  const hz = equatorialToHorizontal(sun.ra, sun.dec, loc.lat, loc.lng, jd);
+  
+  document.getElementById('sun-position').innerHTML = 
+    `Altitude: <span class="${hz.alt > 0 ? 'gold' : 'cyan'}">${hz.alt.toFixed(2)}°</span><br>
+     Azimuth: <span class="gold">${hz.az.toFixed(2)}°</span><br>
+     RA: ${(sun.ra/15).toFixed(4)}h<br>
+     Dec: ${sun.dec.toFixed(4)}°`;
+  
+  drawSunCompass(hz.alt, hz.az);
+  
+  const noon_jd = julianDate(new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate(), 12)));
+  const ss = sunRiseSet(noon_jd, loc.lat, loc.lng, -0.833);
+  const civil = sunRiseSet(noon_jd, loc.lat, loc.lng, -6);
+  const nautical = sunRiseSet(noon_jd, loc.lat, loc.lng, -12);
+  const astronomical = sunRiseSet(noon_jd, loc.lat, loc.lng, -18);
+  const golden_high = sunRiseSet(noon_jd, loc.lat, loc.lng, 6);
+  
+  document.getElementById('sun-times').innerHTML = 
+    `Sunrise: <span class="gold">${fracToTimeAMPM(ss.rise, tz)}</span><br>
+     Sunset: <span class="amber">${fracToTimeAMPM(ss.set, tz)}</span><br>
+     Solar Noon: <span class="gold">${fracToTimeAMPM((ss.rise+ss.set)/2, tz)}</span><br>
+     <br>RA: ${(sun.ra/15).toFixed(2)}h · Dec: ${sun.dec.toFixed(2)}°`;
+  
+  document.getElementById('golden-blue').innerHTML = 
+    `<span class="amber">Morning Golden Hour</span><br>
+     ${fracToTimeAMPM(ss.rise, tz)} – ${fracToTimeAMPM(golden_high.rise, tz)}<br><br>
+     <span class="amber">Evening Golden Hour</span><br>
+     ${fracToTimeAMPM(golden_high.set, tz)} – ${fracToTimeAMPM(ss.set, tz)}<br><br>
+     <span class="cyan">Morning Blue Hour</span><br>
+     ${fracToTimeAMPM(civil.rise, tz)} – ${fracToTimeAMPM(ss.rise, tz)}<br><br>
+     <span class="cyan">Evening Blue Hour</span><br>
+     ${fracToTimeAMPM(ss.set, tz)} – ${fracToTimeAMPM(civil.set, tz)}`;
+  
+  document.getElementById('twilight-display').innerHTML = buildTwilightDisplay(
+    astronomical, nautical, civil, ss, tz);
+  
+  const eot = equationOfTime(jd);
+  const eotSign = eot >= 0 ? '+' : '';
+  document.getElementById('eot-value').textContent = `${eotSign}${eot.toFixed(2)} min`;
+  document.getElementById('eot-sub').textContent = eot > 0 ? 'Sun is ahead of clock' : 'Sun is behind clock';
+  drawEOTCurve(now);
+  
+  if (ss.rise !== null && ss.set !== null) {
+    const dayLenMin = (ss.set - ss.rise) * 24 * 60;
+    const h = Math.floor(dayLenMin / 60);
+    const m = Math.floor(dayLenMin % 60);
+    const s = Math.floor((dayLenMin % 1) * 60);
+    document.getElementById('day-length').textContent = `${h}h ${m}m ${s}s`;
+    
+    const yesterday_jd = noon_jd - 1;
+    const ySS = sunRiseSet(yesterday_jd, loc.lat, loc.lng, -0.833);
+    if (ySS.rise !== null && ySS.set !== null) {
+      const yDayLen = (ySS.set - ySS.rise) * 24 * 60;
+      const delta = dayLenMin - yDayLen;
+      const dM = Math.floor(Math.abs(delta));
+      const dS = Math.floor((Math.abs(delta) % 1) * 60);
+      const sign = delta >= 0 ? '+' : '−';
+      const cls = delta >= 0 ? 'positive' : 'negative';
+      document.getElementById('day-delta').innerHTML = 
+        `<span class="${cls}">${sign}${dM}m ${dS}s vs yesterday</span> · Days getting ${delta >= 0 ? 'longer' : 'shorter'}`;
+    }
+  } else {
+    document.getElementById('day-length').textContent = hz.alt > 0 ? '24h 0m 0s' : '0h 0m 0s';
+    document.getElementById('day-delta').textContent = hz.alt > 0 ? 'Midnight sun' : 'Polar night';
+  }
+  
+  drawAnalemma(now);
+  updateSolarCycle(now);
+}
+
+function buildTwilightDisplay(astro, naut, civil, ss, tz) {
+  const rows = [
+    { label: 'Astronomical Dawn', time: fracToTimeAMPM(astro.rise, tz), color: getThemeColor('--chart-grid-subtle') },
+    { label: 'Nautical Dawn', time: fracToTimeAMPM(naut.rise, tz), color: getThemeColor('--blue-accent') },
+    { label: 'Civil Dawn', time: fracToTimeAMPM(civil.rise, tz), color: getThemeColor('--cyan') },
+    { label: 'Sunrise', time: fracToTimeAMPM(ss.rise, tz), color: getThemeColor('--gold') },
+    { label: 'Sunset', time: fracToTimeAMPM(ss.set, tz), color: getThemeColor('--amber') },
+    { label: 'Civil Dusk', time: fracToTimeAMPM(civil.set, tz), color: getThemeColor('--cyan') },
+    { label: 'Nautical Dusk', time: fracToTimeAMPM(naut.set, tz), color: getThemeColor('--blue-accent') },
+    { label: 'Astronomical Dusk', time: fracToTimeAMPM(astro.set, tz), color: getThemeColor('--chart-grid-subtle') },
+  ];
+  
+  let html = '<div style="margin-top:.5rem">';
+  html += '<div class="twilight-bar">';
+  html += '<div style="flex:1;background:linear-gradient(to right,#0a0a1a,#1a1a3a,#1a2a4a,#2a3a5a,#c8844e,#ffd080,#87ceeb,#87ceeb,#ffd080,#c8644e,#2a3a5a,#1a2a4a,#1a1a3a,#0a0a1a)"></div>';
+  html += '</div>';
+  
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.3rem;margin-top:.8rem">';
+  rows.forEach(r => {
+    html += `<div class="timeline-row" style="border:none;padding:.2rem 0">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${r.color};margin-right:.5rem;flex-shrink:0"></span>
+      <span class="timeline-label">${r.label}</span>
+      <span class="timeline-value">${r.time}</span>
+    </div>`;
+  });
+  html += '</div></div>';
+  return html;
+}
+
+function drawSunCompass(alt, az) {
+  const c = document.getElementById('sun-pos-canvas');
+  if (!c) return;
+  const { ctx, w, h } = getCtx(c);
+  const cx = w/2, cy = h/2, r = Math.min(w,h)/2 - 20;
+  
+  const gridColor = getThemeColor('--chart-grid');
+  const textColor = getThemeColor('--text-dim');
+  const goldColor = getThemeColor('--gold');
+  const goldDimColor = getThemeColor('--gold-dim');
+  
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = 1;
+  for (let i = 1; i <= 3; i++) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * i/3, 0, Math.PI*2);
+    ctx.stroke();
+  }
+  
+  ctx.fillStyle = textColor;
+  ctx.font = '10px "Outfit"';
+  ctx.textAlign = 'center';
+  ctx.fillText('N', cx, cy - r - 5);
+  ctx.fillText('S', cx, cy + r + 12);
+  ctx.fillText('E', cx + r + 10, cy + 4);
+  ctx.fillText('W', cx - r - 10, cy + 4);
+  
+  if (alt > -18) {
+    const sunR = r * (1 - Math.max(0, alt) / 90);
+    const azRad = (az - 180) * DEG;
+    const sx = cx + sunR * Math.sin(azRad);
+    const sy = cy - sunR * Math.cos(azRad);
+    
+    ctx.beginPath();
+    ctx.arc(sx, sy, alt > 0 ? 6 : 4, 0, Math.PI*2);
+    ctx.fillStyle = alt > 0 ? goldColor : goldDimColor;
+    ctx.fill();
+    
+    if (alt > 0) {
+      ctx.beginPath();
+      ctx.arc(sx, sy, 10, 0, Math.PI*2);
+      ctx.strokeStyle = goldColor + '4d';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+}
+
+function drawEOTCurve(now) {
+  const c = document.getElementById('eot-canvas');
+  if (!c) return;
+  const { ctx, w, h } = getCtx(c);
+  
+  const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / MS_PER_DAY);
+  const blueColor = getThemeColor('--blue-accent');
+  const gridColor = getThemeColor('--chart-grid');
+  const goldColor = getThemeColor('--gold');
+  
+  ctx.beginPath();
+  ctx.strokeStyle = blueColor;
+  ctx.lineWidth = 1.5;
+  for (let d = 0; d < 365; d++) {
+    const date = new Date(now.getFullYear(), 0, d + 1, 12);
+    const jd = julianDate(date);
+    const eot = equationOfTime(jd);
+    const x = d / 365 * w;
+    const y = h/2 - eot * (h/2) / 17;
+    if (d === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(0, h/2);
+  ctx.lineTo(w, h/2);
+  ctx.stroke();
+  
+  const todayX = dayOfYear / 365 * w;
+  ctx.strokeStyle = goldColor;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(todayX, 0);
+  ctx.lineTo(todayX, h);
+  ctx.stroke();
+}
+
+function drawAnalemma(now) {
+  const c = document.getElementById('analemma-canvas');
+  if (!c) return;
+  const { ctx, w, h } = getCtx(c);
+  
+  const cx = w/2, cy = h/2;
+  const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / MS_PER_DAY);
+  const blueColor = getThemeColor('--blue-accent');
+  const goldColor = getThemeColor('--gold');
+  const textColor = getThemeColor('--text-dim');
+  
+  ctx.beginPath();
+  ctx.strokeStyle = blueColor;
+  ctx.lineWidth = 1.5;
+  
+  let todayX, todayY;
+  for (let d = 0; d < 365; d++) {
+    const date = new Date(now.getFullYear(), 0, d + 1, 12);
+    const jd = julianDate(date);
+    const sun = sunPosition(jd);
+    const eot = equationOfTime(jd);
+    
+    const x = cx + eot * (w * 0.35) / 17;
+    const y = cy - sun.dec * (h * 0.4) / 24;
+    
+    if (d === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    if (d === dayOfYear) { todayX = x; todayY = y; }
+  }
+  ctx.stroke();
+  
+  if (todayX !== undefined) {
+    ctx.beginPath();
+    ctx.arc(todayX, todayY, 5, 0, Math.PI*2);
+    ctx.fillStyle = goldColor;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(todayX, todayY, 9, 0, Math.PI*2);
+    ctx.strokeStyle = goldColor + '66';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+  }
+  
+  ctx.fillStyle = textColor;
+  ctx.font = '9px Outfit';
+  ctx.textAlign = 'center';
+  ctx.fillText('N', cx, 10);
+  ctx.fillText('S', cx, h - 5);
+}
+
+function updateSolarCycle(now) {
+  const cycleStart = new Date(2019, 11, 1);
+  const cycleEnd = new Date(2030, 11, 1);
+  
+  const elapsed = (now - cycleStart) / (cycleEnd - cycleStart);
+  const yearsIn = ((now - cycleStart) / (DAYS_PER_YEAR * MS_PER_DAY)).toFixed(1);
+  
+  document.getElementById('solar-cycle-info').innerHTML = 
+    `Solar Cycle 25 · ${yearsIn} years in<br>
+     Started: Dec 2019 · Peak: ~Mid 2025<br>
+     Progress: ${(elapsed * 100).toFixed(1)}%`;
+  
+  const c = document.getElementById('solar-cycle-canvas');
+  if (!c) return;
+  const { ctx, w, h } = getCtx(c);
+  
+  const redColor = getThemeColor('--red-soft');
+  const goldColor = getThemeColor('--gold');
+  const textColor = getThemeColor('--text-dim');
+  
+  ctx.beginPath();
+  ctx.strokeStyle = redColor;
+  ctx.lineWidth = 2;
+  for (let x = 0; x < w; x++) {
+    const t = x / w;
+    const peakT = 0.5;
+    const sigma = 0.2;
+    const y = Math.exp(-0.5 * Math.pow((t - peakT) / sigma, 2));
+    const py = h - 10 - y * (h - 20);
+    if (x === 0) ctx.moveTo(x, py); else ctx.lineTo(x, py);
+  }
+  ctx.stroke();
+  
+  const tx = elapsed * w;
+  ctx.strokeStyle = goldColor;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(tx, 0);
+  ctx.lineTo(tx, h);
+  ctx.stroke();
+  
+  ctx.fillStyle = textColor;
+  ctx.font = '9px Outfit';
+  ctx.fillText('2020', 5, h - 2);
+  ctx.fillText('2025', w * 0.45, h - 2);
+  ctx.fillText('2030', w - 25, h - 2);
+}
+
+function updateEvents() {
+  const now = new Date();
+  const year = now.getFullYear();
+  
+  const eclipses = getUpcomingEclipses(year);
+  let eclHtml = '';
+  eclipses.forEach(e => {
+    const d = new Date(e.date);
+    const isPast = d < now;
+    eclHtml += `<div class="timeline-row">
+      <span class="timeline-dot" style="background:${e.type.includes('Solar') ? getThemeColor('--gold') : getThemeColor('--cyan')}"></span>
+      <span class="timeline-label" style="${isPast ? 'opacity:.5' : ''}">${e.type}</span>
+      <span class="timeline-value">${e.date}</span>
+    </div>`;
+  });
+  document.getElementById('eclipse-list').innerHTML = eclHtml;
+  
+  const se = solsticesEquinoxes(year);
+  const seNext = solsticesEquinoxes(year + 1);
+  const seEvents = [
+    { name: 'March Equinox', date: se.marchEquinox, icon: '🌗' },
+    { name: 'June Solstice', date: se.juneSolstice, icon: '☀️' },
+    { name: 'Sept Equinox', date: se.septEquinox, icon: '🌗' },
+    { name: 'Dec Solstice', date: se.decSolstice, icon: '❄' },
+  ];
+  
+  let nextSE = seEvents.find(e => e.date > now);
+  if (!nextSE) {
+    nextSE = { name: 'March Equinox', date: seNext.marchEquinox, icon: '🌗' };
+  }
+  const daysUntil = Math.ceil((nextSE.date - now) / MS_PER_DAY);
+  
+  let seHtml = `<div style="margin-bottom:1rem">
+    <span class="gold">Next: ${nextSE.name}</span><br>
+    ${nextSE.date.toDateString()} · <span class="amber">${daysUntil} days</span>
+  </div>`;
+  seEvents.forEach(e => {
+    seHtml += `<div class="timeline-row">
+      <span class="timeline-dot" style="background:${e.date < now ? getThemeColor('--text-dim') : getThemeColor('--gold')}"></span>
+      <span class="timeline-label">${e.name}</span>
+      <span class="timeline-value">${e.date.toLocaleDateString('en-US', {month:'short', day:'numeric'})}</span>
+    </div>`;
+  });
+  document.getElementById('solstice-equinox').innerHTML = seHtml;
+  
+  const showers = getMeteorShowers(year);
+  const nextShowers = getMeteorShowers(year + 1);
+  const allShowers = [...showers, ...nextShowers.slice(0, 3)];
+  let showerHtml = '';
+  let activeFound = false;
+  allShowers.forEach(s => {
+    const start = new Date(s.start);
+    const end = new Date(s.end);
+    const peak = new Date(s.peak);
+    const isActive = now >= start && now <= end;
+    const isPast = end < now;
+    if (isPast) return;
+    if (isActive && !activeFound) { showerHtml += `<div style="color:var(--green-soft);font-size:.7rem;margin-bottom:.3rem">● ACTIVE</div>`; activeFound = true; }
+    showerHtml += `<div class="timeline-row">
+      <span class="timeline-label">${s.name}${isActive ? ' ★' : ''}</span>
+      <span class="timeline-value">Peak: ${peak.toLocaleDateString('en-US',{month:'short',day:'numeric'})} · ZHR ${s.zhr}</span>
+    </div>`;
+  });
+  document.getElementById('meteor-showers').innerHTML = showerHtml || 'No upcoming showers';
+  
+  updateConjunctions(now);
+  updateRetrogrades(now, year);
+}
+
+function updateConjunctions(now) {
+  const planets = ['mercury','venus','mars','jupiter','saturn'];
+  const names = {mercury:'Mercury',venus:'Venus',mars:'Mars',jupiter:'Jupiter',saturn:'Saturn'};
+  const conjunctions = [];
+  
+  function angularSeparation(ra1, dec1, ra2, dec2) {
+    const d1 = dec1 * DEG, d2 = dec2 * DEG;
+    const dRA = (ra1 - ra2) * DEG;
+    const cos_sep = Math.sin(d1)*Math.sin(d2) + Math.cos(d1)*Math.cos(d2)*Math.cos(dRA);
+    return Math.acos(Math.max(-1, Math.min(1, cos_sep))) * RAD;
+  }
+  
+  for (let d = 0; d < 90; d++) {
+    const date = new Date(now.getTime() + d * MS_PER_DAY);
+    const jd = julianDate(date);
+    const positions = {};
+    planets.forEach(p => { positions[p] = planetPosition(jd, p); });
+    
+    for (let i = 0; i < planets.length; i++) {
+      for (let j = i+1; j < planets.length; j++) {
+        const p1 = positions[planets[i]];
+        const p2 = positions[planets[j]];
+        if (!p1 || !p2) continue;
+        const sep = angularSeparation(p1.ra, p1.dec, p2.ra, p2.dec);
+        if (sep < 5) {
+          conjunctions.push({
+            date: date.toLocaleDateString('en-US', {month:'short', day:'numeric'}),
+            bodies: `${names[planets[i]]} – ${names[planets[j]]}`,
+            sep: sep.toFixed(1)
+          });
+        }
+      }
+    }
+  }
+  
+  const seen = {};
+  const unique = conjunctions.filter(c => {
+    if (seen[c.bodies]) return false;
+    seen[c.bodies] = true;
+    return true;
+  });
+  
+  let html = '';
+  unique.slice(0, 5).forEach(c => {
+    html += `<div class="timeline-row">
+      <span class="timeline-dot" style="background:var(--gold)"></span>
+      <span class="timeline-label">${c.bodies} (${c.sep}°)</span>
+      <span class="timeline-value">${c.date}</span>
+    </div>`;
+  });
+  document.getElementById('conjunctions').innerHTML = html || '<span style="color:var(--text-dim)">No close conjunctions in next 90 days</span>';
+}
+
+function updateRetrogrades(now, year) {
+  const retros = getRetrogrades(year);
+  const colors = {Mercury:'#7a8ba8',Venus:'#c8a84e',Mars:'#c85a5a',Jupiter:'#d4924e',Saturn:'#5ab8c8'};
+  
+  const yearStart = new Date(year, 0, 1);
+  const yearEnd = new Date(year, 11, 31);
+  const yearMs = yearEnd - yearStart;
+  const nowPos = (now - yearStart) / yearMs;
+  
+  let html = '<div style="position:relative;padding:0 0 .5rem">';
+  
+  html += '<div style="display:flex;justify-content:space-between;margin-bottom:.5rem">';
+  ['J','F','M','A','M','J','J','A','S','O','N','D'].forEach(m => {
+    html += `<span style="color:var(--text-dim);font-size:.6rem;font-family:var(--font-mono)">${m}</span>`;
+  });
+  html += '</div>';
+  
+  retros.forEach(r => {
+    html += `<div style="display:flex;align-items:center;gap:.5rem;margin:.4rem 0">
+      <span style="width:55px;font-size:.7rem;color:${colors[r.planet]};font-family:var(--font-mono)">${r.planet}</span>
+      <div class="retro-bar" style="flex:1">`;
+    
+    r.periods.forEach(([start, end]) => {
+      const s = new Date(start);
+      const e = new Date(end);
+      const left = Math.max(0, (s - yearStart) / yearMs * 100);
+      const width = Math.max(1, (e - s) / yearMs * 100);
+      html += `<div class="retro-fill" style="left:${left}%;width:${width}%;background:${colors[r.planet]};opacity:0.6"></div>`;
+    });
+    
+    html += '</div></div>';
+  });
+  
+  html += `<div style="position:absolute;left:calc(55px + ${nowPos * 100}% * (1 - 55/100));top:0;bottom:0;width:1px;background:var(--gold);opacity:.5"></div>`;
+  html += '</div>';
+  
+  document.getElementById('retrogrades').innerHTML = html;
+}
+
+function updateSky() {
+  const now = new Date();
+  const jd = julianDate(now);
+  const loc = getActiveLoc();
+  
+  const planets = ['mercury','venus','mars','jupiter','saturn'];
+  const names = {mercury:'Mercury ☿',venus:'Venus ♀',mars:'Mars ♂',jupiter:'Jupiter ♃',saturn:'Saturn ♄'};
+  let planetHtml = '';
+  planets.forEach(p => {
+    const pos = planetPosition(jd, p);
+    if (!pos) return;
+    const hz = equatorialToHorizontal(pos.ra, pos.dec, loc.lat, loc.lng, jd);
+    const constellation = constellationFromLon(pos.lon);
+    const visible = hz.alt > 0;
+    // FIX: Add text indicator for accessibility (not just color)
+    const visibilityText = visible ? '(visible)' : '(below horizon)';
+    planetHtml += `<div class="timeline-row">
+      <span class="timeline-dot" style="background:${visible ? getThemeColor('--green-soft') : getThemeColor('--text-dim')}" aria-hidden="true"></span>
+      <span class="timeline-label">${names[p]} <span class="sr-only">${visibilityText}</span></span>
+      <span class="timeline-value">Alt ${hz.alt.toFixed(1)}° · Az ${hz.az.toFixed(0)}° · ${constellation} ${visible ? '✓' : ''}</span>
+    </div>`;
+  });
+  document.getElementById('planet-positions').innerHTML = planetHtml;
+  
+  const tropical = tropicalZodiac(jd);
+  const sidereal = siderealZodiac(jd);
+  document.getElementById('zodiac-display').innerHTML = 
+    `<span class="gold" style="font-size:1.2rem">${tropical}</span><br>
+     <span style="color:var(--text-dim);font-size:.75rem">Tropical (Western)</span><br><br>
+     <span class="cyan" style="font-size:1.2rem">${sidereal}</span><br>
+     <span style="color:var(--text-dim);font-size:.75rem">Sidereal (Vedic)</span>`;
+  
+  drawStarChart(now, loc);
+  
+  const sun = sunPosition(jd);
+  const sunHz = equatorialToHorizontal(sun.ra, sun.dec, loc.lat, loc.lng, jd);
+  const phase = moonPhase(jd);
+  const moonIllum = moonIllumination(phase);
+  
+  const bortleSelect = document.getElementById('bortle-select');
+  const bortle = bortleSelect ? parseInt(bortleSelect.value) : 4;
+  
+  const bortleMaxStars = {
+    1: 4500, 2: 3000, 3: 1500, 4: 900, 5: 500, 6: 250, 7: 100, 8: 50, 9: 20
+  };
+  const maxStars = bortleMaxStars[bortle] || 900;
+  
+  let starCount;
+  if (sunHz.alt > 0) { 
+    starCount = 0; 
+  } else if (sunHz.alt > -6) { 
+    starCount = Math.floor(maxStars * 0.02 * (1 + Math.abs(sunHz.alt) / 6)); 
+  } else if (sunHz.alt > -12) { 
+    starCount = Math.floor(maxStars * (0.1 + 0.4 * (Math.abs(sunHz.alt) - 6) / 6)); 
+  } else if (sunHz.alt > -18) { 
+    starCount = Math.floor(maxStars * (0.5 + 0.3 * (Math.abs(sunHz.alt) - 12) / 6)); 
+  } else { 
+    starCount = maxStars; 
+  }
+  
+  if (sunHz.alt < -6 && moonIllum > 10) {
+    const moonFactor = 1 - (moonIllum / 100) * 0.7;
+    starCount = Math.floor(starCount * moonFactor);
+  }
+  
+  document.getElementById('star-count').textContent = starCount.toLocaleString();
+  const bortleDesc = ['', 'Pristine', 'Dark', 'Rural', 'Rural/suburban', 'Suburban', 'Bright suburban', 'Urban', 'City', 'Inner-city'];
+  document.getElementById('star-count-sub').textContent = 
+    sunHz.alt > 0 ? 'Daytime — no stars visible' :
+    `${sunHz.alt > -12 ? 'Twilight' : 'Night'} · Moon ${moonIllum.toFixed(0)}% · Bortle ${bortle} (${bortleDesc[bortle]})`;
+}
+
+function drawStarChart(now, loc) {
+  const c = document.getElementById('star-chart-canvas');
+  if (!c) return;
+  const { ctx, w, h } = getCtx(c);
+  const cx = w/2, cy = h/2;
+  const r = Math.min(w, h) / 2 - 20;
+  
+  const jd = julianDate(now);
+  
+  const gridColor = getThemeColor('--chart-grid');
+  const gridSubtleColor = getThemeColor('--chart-grid-subtle');
+  const textColor = getThemeColor('--text-dim');
+  const starColor = getThemeColor('--text-primary');
+  const labelColor = getThemeColor('--text-secondary');
+  
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  for (let alt = 30; alt <= 60; alt += 30) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * (1 - alt/90), 0, Math.PI*2);
+    ctx.strokeStyle = gridSubtleColor;
+    ctx.stroke();
+  }
+  
+  // FIX: Corrected star chart cardinal directions for astronomical convention
+  // Looking up at the sky: East is on the left, West on the right
+  ctx.fillStyle = textColor;
+  ctx.font = '10px Outfit';
+  ctx.textAlign = 'center';
+  ctx.fillText('N', cx, cy - r - 6);
+  ctx.fillText('S', cx, cy + r + 14);
+  ctx.fillText('E', cx - r - 10, cy + 4);  // FIX: East on left
+  ctx.fillText('W', cx + r + 10, cy + 4);  // FIX: West on right
+  
+  const starPositions = [];
+  BRIGHT_STARS.forEach(([raH, dec, mag, name]) => {
+    const ra = raH * 15;
+    const hz = equatorialToHorizontal(ra, dec, loc.lat, loc.lng, jd);
+    if (hz.alt < 0) return;
+    
+    const starR = r * (1 - hz.alt / 90);
+    // FIX: Corrected azimuth mapping for mirror-image sky chart
+    const azRad = (180 - hz.az) * DEG;  // Mirror for looking up
+    const sx = cx + starR * Math.sin(azRad);
+    const sy = cy - starR * Math.cos(azRad);
+    const size = Math.max(1, 4 - mag);
+    const brightness = Math.max(0.3, 1 - mag / 3);
+    starPositions.push({ sx, sy, size, brightness, mag, name });
+  });
+  
+  starPositions.forEach(s => {
+    ctx.beginPath();
+    ctx.arc(s.sx, s.sy, s.size, 0, Math.PI * 2);
+    ctx.fillStyle = starColor;
+    ctx.globalAlpha = s.brightness;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  });
+  
+  const placedLabels = [];
+  const labelCandidates = starPositions
+    .filter(s => s.mag < 1.5)
+    .sort((a, b) => a.mag - b.mag);
+  
+  labelCandidates.forEach(s => {
+    ctx.font = '9px Outfit';
+    const tw = ctx.measureText(s.name).width;
+    const th = 10;
+    
+    const offsets = [
+      { x: s.sx + s.size + 4, y: s.sy + 3 },
+      { x: s.sx - tw - s.size - 4, y: s.sy + 3 },
+      { x: s.sx - tw / 2, y: s.sy - s.size - 4 },
+      { x: s.sx - tw / 2, y: s.sy + s.size + th + 2 },
+    ];
+    
+    for (const off of offsets) {
+      const rect = { x: off.x - 1, y: off.y - th, w: tw + 2, h: th + 4 };
+      const collision = placedLabels.some(p =>
+        rect.x < p.x + p.w && rect.x + rect.w > p.x &&
+        rect.y < p.y + p.h && rect.y + rect.h > p.y
+      );
+      if (!collision) {
+        ctx.fillStyle = labelColor;
+        ctx.globalAlpha = s.brightness;
+        ctx.textAlign = 'left';
+        ctx.fillText(s.name, off.x, off.y);
+        ctx.globalAlpha = 1;
+        placedLabels.push(rect);
+        break;
+      }
+    }
+  });
+}
+
+function updateEarth() {
+  const now = new Date();
+  const jd = julianDate(now);
+  const loc = getActiveLoc();
+  const sun = sunPosition(jd);
+  
+  const distKm = sun.R * AU_KM;
+  const distAU = sun.R;
+  document.getElementById('sun-distance').innerHTML = 
+    `<span style="font-size:1.2rem">${(distKm/1e6).toFixed(3)}</span> <span style="font-size:.8rem;color:var(--text-dim)">million km</span>`;
+  
+  const perihelion = 147.1e6;
+  const aphelion = 152.1e6;
+  const pct = ((distKm - perihelion) / (aphelion - perihelion) * 100).toFixed(1);
+  document.getElementById('sun-distance-sub').textContent = 
+    `${distAU.toFixed(6)} AU · ${pct}% from perihelion to aphelion`;
+  
+  const effectiveTilt = sun.dec;
+  document.getElementById('axial-tilt').innerHTML = 
+    `<span class="gold">${effectiveTilt.toFixed(2)}°</span> <span style="font-size:.8rem;color:var(--text-dim)">${effectiveTilt > 0 ? 'toward' : 'away from'} sun</span>`;
+  drawTiltDiagram(effectiveTilt);
+  
+  const odo = spaceOdometer(loc.lat);
+  document.getElementById('space-odometer').textContent = `${Math.floor(odo.total).toLocaleString()} km`;
+  document.getElementById('odometer-breakdown').innerHTML = 
+    `Combined: ${odo.combinedSpeed.toFixed(1)} km/s (rot: ${odo.rotSpeed.toFixed(2)} + orbit: ${odo.orbitalSpeed.toFixed(1)} + galaxy: ${odo.galaxySpeed.toFixed(0)})`;
+  
+  drawOrbit(jd, sun);
+}
+
+function drawTiltDiagram(tilt) {
+  const c = document.getElementById('tilt-canvas');
+  if (!c) return;
+  const { ctx, w, h } = getCtx(c);
+  
+  const cx = w * 0.6, cy = h / 2, r = 25;
+  const goldColor = getThemeColor('--gold');
+  const blueColor = getThemeColor('--blue-accent');
+  const textColor = getThemeColor('--text-secondary');
+  
+  ctx.strokeStyle = goldColor + '4d';
+  ctx.lineWidth = 1;
+  for (let y = cy - 40; y <= cy + 40; y += 10) {
+    ctx.beginPath();
+    ctx.moveTo(10, y);
+    ctx.lineTo(cx - r - 10, y);
+    ctx.stroke();
+  }
+  
+  const grd = ctx.createRadialGradient(10, cy, 0, 10, cy, 30);
+  grd.addColorStop(0, goldColor + '80');
+  grd.addColorStop(1, 'transparent');
+  ctx.fillStyle = grd;
+  ctx.fillRect(0, cy - 30, 40, 60);
+  
+  ctx.save();
+  ctx.translate(cx, cy);
+  
+  const tiltRad = -tilt * DEG;
+  ctx.strokeStyle = textColor;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath();
+  ctx.moveTo(Math.sin(tiltRad) * -40, Math.cos(tiltRad) * -40);
+  ctx.lineTo(Math.sin(tiltRad) * 40, Math.cos(tiltRad) * 40);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  
+  ctx.beginPath();
+  ctx.arc(0, 0, r, 0, Math.PI * 2);
+  ctx.fillStyle = blueColor + '40';
+  ctx.fill();
+  ctx.strokeStyle = blueColor;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  
+  ctx.fillStyle = textColor;
+  ctx.font = '9px Outfit';
+  ctx.textAlign = 'center';
+  ctx.fillText('N', Math.sin(tiltRad) * -35, Math.cos(tiltRad) * -35 + 3);
+  ctx.fillText('S', Math.sin(tiltRad) * 35, Math.cos(tiltRad) * 35 + 3);
+  
+  ctx.restore();
+  
+  ctx.fillStyle = goldColor;
+  ctx.font = '10px "JetBrains Mono"';
+  ctx.textAlign = 'left';
+  ctx.fillText(`${tilt > 0 ? '+' : ''}${tilt.toFixed(1)}°`, cx + r + 10, cy - 5);
+}
+
+function drawOrbit(jd, sun) {
+  const c = document.getElementById('orbit-canvas');
+  if (!c) return;
+  const { ctx, w, h } = getCtx(c);
+  
+  const cx = w/2 + 10, cy = h/2;
+  const a = w * 0.38;
+  const e = 0.0167;
+  const b = a * Math.sqrt(1 - e*e);
+  const focusOffset = a * e;
+  
+  const gridColor = getThemeColor('--chart-grid');
+  const goldColor = getThemeColor('--gold');
+  const blueColor = getThemeColor('--blue-accent');
+  const textColor = getThemeColor('--text-dim');
+  
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, a, b, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  
+  ctx.beginPath();
+  ctx.arc(cx - focusOffset, cy, 6, 0, Math.PI * 2);
+  ctx.fillStyle = goldColor;
+  ctx.fill();
+  const sunGrd = ctx.createRadialGradient(cx - focusOffset, cy, 3, cx - focusOffset, cy, 20);
+  sunGrd.addColorStop(0, goldColor + '4d');
+  sunGrd.addColorStop(1, 'transparent');
+  ctx.fillStyle = sunGrd;
+  ctx.beginPath();
+  ctx.arc(cx - focusOffset, cy, 20, 0, Math.PI * 2);
+  ctx.fill();
+  
+  const T = centuriesJ2000(jd);
+  const M = ((357.5291 + 35999.0503 * T) % 360) * DEG;
+  const earthE = 0.0167;
+  let E_eccentric = M;
+  for (let i = 0; i < 10; i++) E_eccentric = M + earthE * Math.sin(E_eccentric);
+  const v = 2 * Math.atan2(Math.sqrt(1+earthE) * Math.sin(E_eccentric/2), Math.sqrt(1-earthE) * Math.cos(E_eccentric/2));
+  
+  const earthAngle = v + (102.9 * DEG);
+  const earthR = (1 - earthE*earthE) / (1 + earthE * Math.cos(v));
+  
+  const ex = cx + a * earthR * Math.cos(earthAngle) - focusOffset;
+  const ey = cy - b * earthR * Math.sin(earthAngle);
+  
+  ctx.beginPath();
+  ctx.arc(ex, ey, 4, 0, Math.PI * 2);
+  ctx.fillStyle = blueColor;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(ex, ey, 8, 0, Math.PI * 2);
+  ctx.strokeStyle = blueColor + '66';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  
+  ctx.fillStyle = textColor;
+  ctx.font = '8px Outfit';
+  ctx.textAlign = 'center';
+  ctx.fillText('Perihelion (Jan)', cx - a - 5, cy + 15);
+  ctx.fillText('Aphelion (Jul)', cx + a + 5, cy + 15);
+  ctx.fillText('Earth', ex, ey - 12);
+}
+
+function updateDeepSpace() {
+  const v1d = probeDistance(V1_REF.epoch, V1_REF.dist, V1_REF.vel);
+  const v1au = v1d / AU_KM;
+  const v1lh = v1d / LIGHT_SPEED_KM_S / 3600;
+  document.getElementById('voyager1-dist').innerHTML = `${(v1d/1e9).toFixed(3)} <span style="font-size:.8rem;color:var(--text-dim)">billion km</span>`;
+  document.getElementById('voyager1-sub').textContent = `${v1au.toFixed(2)} AU · ${v1lh.toFixed(2)} light-hours · 17.0 km/s`;
+  
+  const v2d = probeDistance(V2_REF.epoch, V2_REF.dist, V2_REF.vel);
+  const v2au = v2d / AU_KM;
+  const v2lh = v2d / LIGHT_SPEED_KM_S / 3600;
+  document.getElementById('voyager2-dist').innerHTML = `${(v2d/1e9).toFixed(3)} <span style="font-size:.8rem;color:var(--text-dim)">billion km</span>`;
+  document.getElementById('voyager2-sub').textContent = `${v2au.toFixed(2)} AU · ${v2lh.toFixed(2)} light-hours · 15.3 km/s`;
+  
+  const nhd = probeDistance(NH_REF.epoch, NH_REF.dist, NH_REF.vel);
+  const nhau = nhd / AU_KM;
+  const nhlh = nhd / LIGHT_SPEED_KM_S / 3600;
+  document.getElementById('newhorizons-dist').innerHTML = `${(nhd/1e9).toFixed(3)} <span style="font-size:.8rem;color:var(--text-dim)">billion km</span>`;
+  document.getElementById('newhorizons-sub').textContent = `${nhau.toFixed(2)} AU · ${nhlh.toFixed(2)} light-hours · 13.8 km/s`;
+  
+  drawLightSpheres();
+}
+
+function drawLightSpheres() {
+  const c = document.getElementById('light-canvas');
+  if (!c) return;
+  const { ctx, w, h } = getCtx(c);
+  
+  const now = new Date();
+  const maxDist = 150;
+  const earthX = 50;
+  const scale = (w - earthX - 30) / maxDist;
+  const cy = h / 2;
+  
+  const gridSubtleColor = getThemeColor('--chart-grid-subtle');
+  const blueColor = getThemeColor('--blue-accent');
+  const textColor = getThemeColor('--text-secondary');
+  const textDimColor = getThemeColor('--text-dim');
+  
+  ctx.strokeStyle = gridSubtleColor;
+  ctx.lineWidth = 0.5;
+  for (let ly = 25; ly <= maxDist; ly += 25) {
+    const x = earthX + ly * scale;
+    ctx.beginPath();
+    ctx.moveTo(x, 10);
+    ctx.lineTo(x, h - 15);
+    ctx.stroke();
+  }
+  
+  ctx.beginPath();
+  ctx.arc(earthX, cy, 5, 0, Math.PI * 2);
+  ctx.fillStyle = blueColor;
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(earthX, cy, 9, 0, Math.PI * 2);
+  ctx.strokeStyle = blueColor + '4d';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = textColor;
+  ctx.font = '9px Outfit';
+  ctx.textAlign = 'center';
+  ctx.fillText('Earth', earthX, cy + 20);
+  ctx.fillStyle = textDimColor;
+  ctx.font = '7px Outfit';
+  ctx.fillText('(now)', earthX, cy + 30);
+  
+  const sortedEvents = LIGHT_EVENTS.map((evt, i) => {
+    const yearsAgo = (now - evt.date) / (DAYS_PER_YEAR * MS_PER_DAY);
+    return { ...evt, yearsAgo, idx: i };
+  }).sort((a, b) => a.yearsAgo - b.yearsAgo);
+  
+  sortedEvents.forEach((evt, i) => {
+    const lightDistLY = evt.yearsAgo;
+    const radius = lightDistLY * scale;
+    
+    if (radius > w - earthX) return;
+    
+    const hue = 35 + evt.idx * 40;
+    
+    ctx.beginPath();
+    ctx.arc(earthX, cy, radius, -Math.PI * 0.3, Math.PI * 0.3);
+    ctx.strokeStyle = `hsla(${hue}, 70%, 60%, 0.6)`;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    const labelX = earthX + radius + 5;
+    const labelY = cy - 10 - i * 20;
+    if (labelX < w - 80) {
+      ctx.fillStyle = `hsl(${hue}, 70%, 60%)`;
+      ctx.font = '8px Outfit';
+      ctx.textAlign = 'left';
+      ctx.fillText(`${evt.name} (${lightDistLY.toFixed(0)} ly)`, labelX, labelY);
+    }
+  });
+  
+  ctx.fillStyle = textDimColor;
+  ctx.font = '8px Outfit';
+  ctx.textAlign = 'center';
+  for (let ly = 25; ly <= maxDist; ly += 25) {
+    const x = earthX + ly * scale;
+    ctx.fillText(`${ly} ly`, x, h - 3);
+  }
+}
+
+function updateGeo() {
+  drawDayLengthCurve();
+}
+
+function drawDayLengthCurve() {
+  const c = document.getElementById('daylength-curve');
+  if (!c) return;
+  const { ctx, w, h } = getCtx(c);
+  
+  const loc = getActiveLoc();
+  const now = new Date();
+  const year = now.getFullYear();
+  const dayOfYear = Math.floor((now - new Date(year, 0, 0)) / MS_PER_DAY);
+  
+  const gridColor = getThemeColor('--chart-grid');
+  const goldColor = getThemeColor('--gold');
+  const blueColor = getThemeColor('--blue-accent');
+  const textColor = getThemeColor('--text-dim');
+  
+  ctx.strokeStyle = gridColor;
+  ctx.lineWidth = 0.5;
+  ctx.beginPath();
+  ctx.moveTo(0, h/2);
+  ctx.lineTo(w, h/2);
+  ctx.stroke();
+  
+  const dayLengths = [];
+  for (let d = 0; d < 365; d++) {
+    const jd = julianDate(new Date(Date.UTC(year, 0, d + 1, 12)));
+    const ss = sunRiseSet(jd, loc.lat, loc.lng, -0.833);
+    if (ss.rise !== null && ss.set !== null) {
+      dayLengths.push((ss.set - ss.rise) * 24);
+    } else {
+      dayLengths.push(d > 80 && d < 260 ? 24 : 0);
+    }
+  }
+  
+  const maxLen = Math.max(...dayLengths);
+  const minLen = Math.min(...dayLengths);
+  const range = maxLen - minLen || 1;
+  
+  ctx.beginPath();
+  ctx.strokeStyle = goldColor;
+  ctx.lineWidth = 2;
+  for (let d = 0; d < 365; d++) {
+    const x = d / 365 * w;
+    const y = h - 10 - (dayLengths[d] - minLen) / range * (h - 20);
+    if (d === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  
+  const todayX = dayOfYear / 365 * w;
+  ctx.strokeStyle = blueColor;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(todayX, 0);
+  ctx.lineTo(todayX, h);
+  ctx.stroke();
+  
+  ctx.fillStyle = textColor;
+  ctx.font = '9px Outfit';
+  ctx.textAlign = 'left';
+  ctx.fillText(`Max: ${maxLen.toFixed(1)}h`, 5, 12);
+  ctx.fillText(`Min: ${minLen.toFixed(1)}h`, 5, h - 5);
+  
+  const months = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+  ctx.textAlign = 'center';
+  months.forEach((m, i) => {
+    const x = (i + 0.5) / 12 * w;
+    ctx.fillText(m, x, h - 2);
+  });
+}
+
+function updateTime() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
+  const date = now.getDate();
+  
+  if (calViewYear === undefined) {
+    calViewYear = year;
+    calViewMonth = month;
+  }
+  
+  updateCalendar();
+  updateDateReps(now);
+  updateAltCalendars(now);
+  updateSeason(now);
+  updateWorldClock(now);
+  updateCountdowns(now, year);
+}
+
+function changeMonth(delta) {
+  calViewMonth += delta;
+  if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
+  if (calViewMonth < 0) { calViewMonth = 11; calViewYear--; }
+  updateCalendar();
+}
+
+function updateCalendar() {
+  const now = new Date();
+  const year = calViewYear;
+  const month = calViewMonth;
+  
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('cal-month-year').textContent = `${monthNames[month]} ${year}`;
+  
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  
+  let html = ['S','M','T','W','T','F','S'].map(d => `<div class="cal-header">${d}</div>`).join('');
+  
+  for (let i = 0; i < firstDay; i++) {
+    html += '<div class="cal-day empty"></div>';
+  }
+  
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isToday = year === now.getFullYear() && month === now.getMonth() && d === now.getDate();
+    html += `<div class="cal-day${isToday ? ' today' : ''}">${d}</div>`;
+  }
+  
+  document.getElementById('calendar-grid').innerHTML = html;
+}
+
+function updateDateReps(now) {
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
+  const d = now.getDate();
+  const jd = julianDate(now);
+  const mjd = jd - 2400000.5;
+  const dayOfYear = Math.floor((now - new Date(y, 0, 0)) / MS_PER_DAY);
+  const weekNum = Math.ceil(dayOfYear / 7);
+  
+  document.getElementById('date-reps').innerHTML = 
+    `ISO 8601: <span class="gold">${y}-${m.toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}</span><br>
+     Julian Day: <span class="gold">${jd.toFixed(4)}</span><br>
+     Modified JD: <span class="gold">${mjd.toFixed(4)}</span><br>
+     Day of Year: <span class="gold">${dayOfYear}</span><br>
+     Week: <span class="gold">${weekNum}</span>`;
+}
+
+function updateAltCalendars(now) {
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
+  const d = now.getDate();
+  
+  const hijri = gregorianToHijri(y, m, d);
+  const hebrew = gregorianToHebrew(y, m, d);
+  const persian = gregorianToPersian(y, m, d);
+  const ethiopian = gregorianToEthiopian(y, m, d);
+  const mayan = gregorianToMayan(y, m, d);
+  const chinese = chineseYear(y, m, d);
+  
+  document.getElementById('alt-calendars').innerHTML = 
+    `Islamic: <span class="gold">${hijri.day} / ${hijri.month} / ${hijri.year} AH</span><br>
+     Hebrew: <span class="gold">${hebrew.day} ${hebrew.month} ${hebrew.year}</span><br>
+     Persian: <span class="gold">${persian.day} / ${persian.month} / ${persian.year} SH</span><br>
+     Ethiopian: <span class="gold">${ethiopian.day} / ${ethiopian.month} / ${ethiopian.year}</span><br>
+     Mayan: <span class="gold">${mayan}</span><br>
+     Chinese: <span class="gold">${chinese.year} · ${chinese.stem}-${chinese.branch} · ${chinese.animal}</span>`;
+}
+
+function updateSeason(now) {
+  const year = now.getFullYear();
+  const se = solsticesEquinoxes(year);
+  const seNext = solsticesEquinoxes(year + 1);
+  
+  let season, start, end;
+  if (now < se.marchEquinox) {
+    season = 'Winter'; start = solsticesEquinoxes(year - 1).decSolstice; end = se.marchEquinox;
+  } else if (now < se.juneSolstice) {
+    season = 'Spring'; start = se.marchEquinox; end = se.juneSolstice;
+  } else if (now < se.septEquinox) {
+    season = 'Summer'; start = se.juneSolstice; end = se.septEquinox;
+  } else if (now < se.decSolstice) {
+    season = 'Autumn'; start = se.septEquinox; end = se.decSolstice;
+  } else {
+    season = 'Winter'; start = se.decSolstice; end = seNext.marchEquinox;
+  }
+  
+  const progress = (now - start) / (end - start) * 100;
+  const daysLeft = Math.ceil((end - now) / MS_PER_DAY);
+  
+  document.getElementById('season-display').textContent = season;
+  document.getElementById('season-progress').textContent = `${progress.toFixed(1)}% complete · ${daysLeft} days left`;
+  document.getElementById('season-bar').style.width = `${progress}%`;
+}
+
+function updateWorldClock(now) {
+  const el = document.getElementById('world-clock');
+  let html = '';
+  worldClockZones.forEach(zone => {
+    const offset = getTimezoneOffsetForZone(zone.tz, now);
+    const timeStr = formatTimeInZone(now, zone.tz, use24h);
+    
+    // FIX: Proper 24h conversion for day/night detection
+    let hour24;
+    if (use24h) {
+      hour24 = parseInt(timeStr.split(':')[0]);
+    } else {
+      const parts = timeStr.match(/(\d+):(\d+):(\d+)\s*(AM|PM)/i);
+      if (parts) {
+        let h = parseInt(parts[1]);
+        const isPM = parts[4].toUpperCase() === 'PM';
+        if (isPM && h !== 12) h += 12;
+        if (!isPM && h === 12) h = 0;
+        hour24 = h;
+      } else {
+        hour24 = 12;
+      }
+    }
+    const isDay = hour24 >= 6 && hour24 < 20;
+    
+    const offsetSign = offset >= 0 ? '+' : '';
+    const offsetStr = Number.isInteger(offset) ? offset.toString() : offset.toFixed(1);
+    
+    html += `<div style="background:var(--bg-surface);border:1px solid var(--border);border-radius:8px;
+      padding:.6rem .8rem;min-width:120px;text-align:center">
+      <div style="font-size:.65rem;color:var(--text-dim);text-transform:uppercase;letter-spacing:.08em">${zone.label}</div>
+      <div style="font-family:var(--font-mono);font-size:1rem;color:${isDay ? 'var(--gold)' : 'var(--cyan)'};margin-top:.2rem">${timeStr}</div>
+      <div style="font-size:.6rem;color:var(--text-dim)">UTC${offsetSign}${offsetStr}</div>
+    </div>`;
+  });
+  el.innerHTML = html;
+}
+
+function updateCountdowns(now, year) {
+  const se = solsticesEquinoxes(year);
+  const seNext = solsticesEquinoxes(year + 1);
+  const events = [
+    { name: 'March Equinox', date: se.marchEquinox },
+    { name: 'June Solstice', date: se.juneSolstice },
+    { name: 'Sept Equinox', date: se.septEquinox },
+    { name: 'Dec Solstice', date: se.decSolstice },
+    { name: 'Next March Equinox', date: seNext.marchEquinox },
+  ];
+  
+  let leapYear = year;
+  let iterations = 0;
+  // FIX: Add safety limit to prevent infinite loop
+  while ((!isLeapYear(leapYear) || leapYear <= year) && iterations++ < MAX_ITERATIONS) leapYear++;
+  events.push({ name: `Next Leap Year (${leapYear})`, date: new Date(leapYear, 0, 1) });
+  
+  const eclipses = getUpcomingEclipses(year);
+  eclipses.slice(0, 2).forEach(e => {
+    events.push({ name: e.type, date: new Date(e.date) });
+  });
+  
+  const future = events.filter(e => e.date > now).sort((a,b) => a.date - b.date);
+  
+  let html = '';
+  future.slice(0, 6).forEach(e => {
+    const diff = e.date - now;
+    const days = Math.floor(diff / MS_PER_DAY);
+    const hours = Math.floor((diff % MS_PER_DAY) / MS_PER_HOUR);
+    const mins = Math.floor((diff % MS_PER_HOUR) / MS_PER_MINUTE);
+    
+    html += `<div class="timeline-row">
+      <span class="timeline-dot" style="background:var(--gold)"></span>
+      <span class="timeline-label">${e.name}</span>
+      <span class="timeline-value">${days}d ${hours}h ${mins}m</span>
+    </div>`;
+  });
+  document.getElementById('countdowns').innerHTML = html;
+}
+
+// ============================================================
+// MASTER UPDATE LOOP
+// ============================================================
+
+let updateCounter = 0;
+
+function updateAll() {
+  updateActiveLocDisplay();
+  
+  const now = new Date();
+  const unixEl = cacheDOMElement('unix-time');
+  const unixSubEl = cacheDOMElement('unix-sub');
+  if (unixEl) unixEl.textContent = Math.floor(now.getTime() / MS_PER_SECOND);
+  if (unixSubEl) unixSubEl.textContent = now.toISOString();
+  
+  const loc = getActiveLoc();
+  const odo = spaceOdometer(loc.lat);
+  const spaceOdoEl = cacheDOMElement('space-odometer');
+  if (spaceOdoEl) spaceOdoEl.textContent = `${Math.floor(odo.total).toLocaleString()} km`;
+  
+  updateDeepSpace();
+  
+  if (updateCounter % 10 === 0) {
+    updateMoon();
+    updateSun();
+    updateSky();
+    updateEarth();
+    updateTime();
+  }
+  
+  if (updateCounter % 60 === 0) {
+    updateEvents();
+    updateGeo();
+  }
+  
+  updateCounter++;
+}
+
+function updateNavHighlight() {
+  const sections = document.querySelectorAll('.section');
+  const links = document.querySelectorAll('.nav-link');
+  const scrollTop = window.scrollY + 120;
+  
+  sections.forEach((sec, i) => {
+    if (sec.offsetTop <= scrollTop && sec.offsetTop + sec.offsetHeight > scrollTop) {
+      links.forEach(l => l.classList.remove('active'));
+      if (links[i]) links[i].classList.add('active');
+    }
+  });
+}
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+
+function initApp() {
+  hideModal();
+  initDOMCache(); // FIX: Initialize DOM cache for performance
+  initMoon3D();
+  initTheme();
+  
+  document.getElementById('time-fmt-btn').textContent = use24h ? '24h' : '12h';
+  
+  updateCounter = 0;
+  updateAll();
+  
+  setInterval(updateAll, 1000);
+  
+  window.addEventListener('scroll', updateNavHighlight);
+  
+  document.addEventListener('click', (e) => {
+    const panel = document.getElementById('loc-panel');
+    if (panel.classList.contains('open') && !panel.contains(e.target) && 
+        !e.target.closest('#topbar')) {
+      panel.classList.remove('open');
+    }
+  });
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  loadLocations();
+  if (locations.length === 0) {
+    document.getElementById('location-modal').classList.remove('hidden');
+  } else {
+    initApp();
+  }
+});
+
+window.addEventListener('resize', () => {
+  if (moonRenderer) {
+    const container = document.getElementById('moon-3d');
+    if (container) {
+      const w = container.clientWidth || 320;
+      moonRenderer.setSize(w, 320);
+      moonCamera.aspect = w / 320;
+      moonCamera.updateProjectionMatrix();
+    }
+  }
+});
+</script>
+</body>
+</html>
